@@ -98,7 +98,7 @@ class SATELLITE_OT_Render_Skybox(Operator):
         context.window.view_layer = bake_viewlayer
 
         for layer in bake_viewlayer.layer_collection.children:
-            if layer.name != context.scene.satellite_include_col_name:
+            if context.scene.satellite_include_col_name in layer.name:
                 layer.exclude = True
 
 
@@ -193,7 +193,7 @@ def register():
 
     bpy.types.Scene.satellite_include_col_name = StringProperty(
         name="Include Collection",
-        description="Any collection with this name will be included in the Skybox render.",
+        description="Any collection that contains this string be included in the Skybox render.",
         default="Skybox",
     )
 
