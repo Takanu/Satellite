@@ -13,55 +13,22 @@ from bpy.props import (
 )
 
 
-# I dont yet know how to handle this kind of behaviour, so im just going to avoid it for now.
-
-# def UpdateBakeExport(self, context):
-#     """
-#     Updates the "Enable Bake" status once changed from the list menu.
-#     Note - Do not use this in any other place apart from when an object is represented in a list.
-#     """
-
-#     # TODO: THIS WILL BREAK, NOT SURE HOW TO HANDLE IT YET.
-#     self.object.CAPObj.enable_export = self.enable_export
-
-
-#     return None
-
-
-# def GetBakeList(scene, context):
-#     """
-#     Returns the list of baking operations currently created.
-#     """
-
-#     items = [
-#         ("0", "None",  "", 0),
-#         ]
-
-#     preferences = context.preferences
-#     bake_list = None
-#     try:
-#         bake_list = context.scene.SATL_SceneData
-#     except KeyError:
-#         return items
-
-
-#     u = 1
-
-#     for i,x in enumerate(bake_list.bake_presets):
-#         items.append((str(i+1), x.name, x.name, i+1))
-
-#     return items
-
 
 class SATELLITE_FormatSkybox(PropertyGroup):
     # Used to define settings for a Skybox bake.
 
-    # Binds a format to a specific preset, (TODO: Check this!)
+    # Binds a format to a specific preset, (TODO: Check if we need this!)
     instance_id: IntProperty(default=-1)
+
+    world_material: PointerProperty(
+        type = bpy.types.World,
+        name = "Skybox Material",
+        description = "Defines the world material that will be used for Skybox baking.  If left blank the currently defined World Material will be used"
+    )
 
     resolution: IntProperty(
         name="Max Resolution",
-        description="Controls the resolution of the X axis.  The Y axis resolution will be half this value.",
+        description="Controls the resolution of the X axis.  The Y axis resolution will be half this value",
         subtype = 'PIXEL',
         min=4,
         max=32768,
@@ -78,13 +45,13 @@ class SATELLITE_FormatSkybox(PropertyGroup):
 
     use_denoiser: BoolProperty(
         name="Use Denoiser",
-        description="If true, a denoiser will be used after rendering to improve the quality of the final result.",
+        description="If true, the currently active Denoiser and Denoiser Settings will be used for this render (check under Render > Sampling > Render)",
         default=False,
     )
 
     include_collection: StringProperty(
         name="Include Collection",
-        description="Ensures that any collection matching this name in the scene will remain in the render.",
+        description="Ensures that any collection matching this name in the scene will remain in the render",
         default="Skybox",
     )
 
@@ -147,7 +114,7 @@ class SATELLITE_BakePreset(PropertyGroup):
         name = "Output Directory",
         description = "The directory the result will be saved to.",
         default = "//",
-        subtype = "FILE_PATH",
+        subtype = "DIR_PATH",
     )
 
     output_name: StringProperty(
@@ -187,22 +154,6 @@ class SATELLITE_SceneData(PropertyGroup):
 
     # the available baking presets
     bake_presets: CollectionProperty(type=SATELLITE_BakePreset)
-
-    # TODO: Determine whether this is needed for our list to function or not.
-    # # A collection that stores the list of collections that Capsule is currently displaying in the UI list.
-    # bake_list: CollectionProperty(type=BakeListItem)
-
-    # # ???
-    # bake_list_index: IntProperty(
-    #     name="",
-    #     description="",
-    #     )
-
-    # ## ???
-    # bake_selected_list: CollectionProperty(type=BakeListItem)
-
-    # ## ???
-    # bake_selected_list_enum: EnumProperty(items=GetBakeList)
 
     ## The index of the currently selected collection from the UI list.  Will be -1 if not selected.
     bake_selected_list_index: IntProperty(default=0)

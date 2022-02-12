@@ -93,6 +93,7 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
 
             if bake_selected.bake_type == 'Skybox':
                 bake_format = bake_selected.data_skybox
+                bake_format_list.prop(bake_format, "world_material")
                 bake_format_list.prop(bake_format, "resolution")
                 bake_format_list.prop(bake_format, "samples")
                 bake_format_list.prop(bake_format, "use_denoiser")

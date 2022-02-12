@@ -124,6 +124,7 @@ def RestoreRenderSettings(self, context, saved_render_settings):
 
 
 
+
 class SATELLITE_OT_Render(Operator):
     """Renders the selected Bake Preset."""
 
@@ -146,6 +147,9 @@ class SATELLITE_OT_Render(Operator):
         selected_bake_index = sat_data.bake_selected_list_index
         bake_preset = sat_data.bake_presets[selected_bake_index]
 
+
+        # ////////////////////////////////////////////////////////////////////////////
+        # SKYBOX SETUP
         if bake_preset.bake_type == 'Skybox':
             bake_options = bake_preset.data_skybox
 
@@ -159,15 +163,16 @@ class SATELLITE_OT_Render(Operator):
 
 
             # Setup rendering settings
-            context.scene.render.engine = 'CYCLES'
-            context.scene.render.resolution_x = int(bake_options.resolution)
-            context.scene.render.resolution_y = int(bake_options.resolution / 2)
-            context.scene.render.image_settings.file_format = 'HDR'
-            context.scene.cycles.device = 'GPU'
-            context.scene.cycles.samples = bake_options.samples
-            context.scene.cycles.use_denoising = bake_options.use_denoiser
+            scene.render.engine = 'CYCLES'
+            scene.render.resolution_x = int(bake_options.resolution)
+            scene.render.resolution_y = int(bake_options.resolution / 2)
+            scene.render.image_settings.file_format = 'HDR'
+            scene.cycles.device = 'GPU'
+            scene.cycles.samples = bake_options.samples
+            scene.cycles.use_denoising = bake_options.use_denoiser
 
-
+            # ///////////////////////////////////////
+            # CAMERA + WORLD
             # Setup the camera
             bpy.ops.object.camera_add()
             context.active_object.location = Vector((0.0, 0.0, 0.0))
@@ -178,8 +183,14 @@ class SATELLITE_OT_Render(Operator):
             print(camera_name)
             bpy.data.cameras[camera_bname].type = 'PANO'
             bpy.data.cameras[camera_bname].cycles.panorama_type = 'EQUIRECTANGULAR'
-            
 
+            # If a World Material has been defined, use it.
+            old_world = scene.world
+            if bake_options.world_material is not None:
+                scene.world = bake_options.world_material
+            
+            # ///////////////////////////////////////
+            # RENDER
             # render this bad boy *slaps side of car*
             context.scene.camera = context.active_object
             name = bake_preset.output_dir
@@ -191,13 +202,17 @@ class SATELLITE_OT_Render(Operator):
             bpy.ops.render.render(write_still = True)
 
 
-            # ////////////////////////////////////////////////////////////////////////////
-            # Clean up
+            # ////////////////////////////////////////
+            # CLEAN UP
+            if bake_options.world_material is not None:
+                scene.world = old_world
+
             bpy.data.objects.remove(bpy.data.objects[camera_name], do_unlink=True)
             context.scene.view_layers.remove(bake_viewlayer)
 
-            RestoreRenderSettings(self, context, old_render_settings)
+        # Ensure render settings have been restored.
+        RestoreRenderSettings(self, context, old_render_settings)
             
 
-            self.report({'INFO'}, "The Skybox has been saved to " + destination + ".")
+        self.report({'INFO'}, "The Skybox has been saved to " + destination + ".")
         return {'FINISHED'}
