@@ -85,19 +85,41 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
             bake_options_list.prop(bake_selected, "output_name")
             bake_options_list.separator()
             bake_options_list.separator()
+            bake_options_list.separator()
 
-            #
-            bake_options_list.prop(bake_selected, "bake_type", icon="RENDER_RESULT")
-            bake_format_list = bake_options_list.column(align=True)
+            bake_format_selector = bake_options_list.row(align=True)
+            bake_format_selector_split = bake_format_selector.split(factor=0.4, align=True)
+            bake_format_selector_split.label(text="Bake Type", icon="RENDER_RESULT")
+            bake_format_selector_split.prop(bake_selected, "bake_type", text="")
+            #bake_format_selector.separator()
+            bake_options_list.separator()
+
+            
+            bake_format_box = bake_options_list.box()
+            bake_format_list = bake_format_box.column(align=True)
             bake_format_list.separator()
+            #bake_format_selector.separator()
+            #
+            # bake_options_list.prop(bake_selected, "bake_type", icon="RENDER_RESULT")
+            # 
+            # 
 
             if bake_selected.bake_type == 'Skybox':
                 bake_format = bake_selected.data_skybox
                 bake_format_list.prop(bake_format, "world_material")
+                bake_format_list.separator()
+
                 bake_format_list.prop(bake_format, "resolution")
                 bake_format_list.prop(bake_format, "samples")
-                bake_format_list.prop(bake_format, "use_denoiser")
+                bake_format_list.separator()
+
+                bake_format_list_denoiser = bake_format_list.column(align=True, heading="Use Denoiser")
+                bake_format_list_denoiser.prop(bake_format, "use_denoiser", text="")
+                bake_format_list.separator()
+
                 bake_format_list.prop(bake_format, "include_collection")
+                bake_format_list.separator()
+
 
             else:
                 bake_format = bake_selected.data_skybox
