@@ -141,13 +141,13 @@ class SATELLITE_OT_Render(Operator):
         # store old properties for later
         old_render_settings = SaveRenderSettings(self, context)
 
-
         # Get the selected bake preset and check it's type
         sat_data = scene.SATL_SceneData
         selected_bake_index = sat_data.bake_selected_list_index
         bake_preset = sat_data.bake_presets[selected_bake_index]
 
-
+        # ////////////////////////////////////////////////////////////////////////////
+        # ////////////////////////////////////////////////////////////////////////////
         # ////////////////////////////////////////////////////////////////////////////
         # SKYBOX SETUP
         if bake_preset.bake_type == 'Skybox':
@@ -162,14 +162,27 @@ class SATELLITE_OT_Render(Operator):
                     layer.exclude = True
 
 
-            # Setup rendering settings
+
+            # ///////////////////////////////////////
+            # CAMERA + WORLD
             scene.render.engine = 'CYCLES'
             scene.render.resolution_x = int(bake_options.resolution)
             scene.render.resolution_y = int(bake_options.resolution / 2)
             scene.render.image_settings.file_format = 'HDR'
-            scene.cycles.device = 'GPU'
-            scene.cycles.samples = bake_options.samples
-            scene.cycles.use_denoising = bake_options.use_denoiser
+
+            if bake_options.render_engine == 'Cycles':
+                scene.cycles.samples = bake_options.samples
+                scene.cycles.use_denoising = bake_options.cycles_use_denoiser
+            
+            elif bake_options.render_engine == 'Eevee':
+                scene.eevee.taa_render_samples = bake_options.samples
+
+                if bake_options.eevee_disable_pp is True:
+                    scene.eevee.use_gtao = False
+                    scene.eevee.use_bloom = False
+                    scene.eevee.use_ssr = False
+                    scene.eevee.use_motion_blur = False
+            
 
             # ///////////////////////////////////////
             # CAMERA + WORLD
@@ -209,6 +222,9 @@ class SATELLITE_OT_Render(Operator):
 
             bpy.data.objects.remove(bpy.data.objects[camera_name], do_unlink=True)
             context.scene.view_layers.remove(bake_viewlayer)
+        
+
+
 
         # Ensure render settings have been restored.
         RestoreRenderSettings(self, context, old_render_settings)

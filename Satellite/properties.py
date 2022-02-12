@@ -25,6 +25,23 @@ class SATELLITE_FormatSkybox(PropertyGroup):
         name = "Skybox Material",
         description = "Defines the world material that will be used for Skybox baking.  If left blank the currently defined World Material will be used"
     )
+    
+    include_collection: StringProperty(
+        name="Include Collection",
+        description="Ensures that any collection matching this name in the scene will remain in the render",
+        default="Skybox",
+    )
+
+    render_engine: EnumProperty(
+        name="Render Engine",
+        items=
+            (
+            ('Eevee', "Eevee", "Use the Eevee Rendering Engine to render this skybox"),
+            ('Cycles', "Cycles", "Use the Cycles Rendering Engine to render this skybox.  WARNING - Satellite will use the Compute Device you have selected, check this setting under Properties Panel > Render for optimal performance"),
+            ),
+            
+        description="The Render Engine that will be used to perform the render.  WARNING - Some World Material nodes can only be rendered using a certain Render Engine, ensure you select the one that is compatible with your World Material",
+    )
 
     resolution: IntProperty(
         name="Max Resolution",
@@ -43,17 +60,19 @@ class SATELLITE_FormatSkybox(PropertyGroup):
         default=512,
     )
 
-    use_denoiser: BoolProperty(
+    cycles_use_denoiser: BoolProperty(
         name="Use Denoiser",
-        description="If true, the currently active Denoiser and Denoiser Settings will be used for this render (check under Render > Sampling > Render)",
+        description="(Cycles Only) If true, the currently active Denoiser and Denoiser Settings will be used for this render (check under Properties Panel > Render > Sampling > Render)",
         default=False,
     )
 
-    include_collection: StringProperty(
-        name="Include Collection",
-        description="Ensures that any collection matching this name in the scene will remain in the render",
-        default="Skybox",
+    eevee_disable_pp: BoolProperty(
+        name="Disable Post-Processing",
+        description="(Eevee Only) If checked, Satellite will disable any post-processing effects you currently have enabled in Eevee to render the skybox (Ambient Occlusion, Bloom, Screen Space Reflections and Motion Blur)",
+        default=False,
     )
+
+    
 
     #TODO: Include different image format types.
 
@@ -132,7 +151,7 @@ class SATELLITE_BakePreset(PropertyGroup):
             ),
             
         description="Defines the purpose of the bake and the sets of settings Satellite will use in order to perform it.",
-        )
+    )
     
     # might need this for satellite, undetermined
     # instance_id: IntProperty(

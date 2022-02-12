@@ -1,7 +1,13 @@
 # Satellite
-This is a quick tool that renders the World Material and a Collection of your choice into an HDRI Panorama texture, great for creating custom Skyboxes for other applications.
+This is a lightweight tool designed to automate the process of baking Skybox and Camera images in scenes.  While i've built it to create content for game engines it's designed to be flexible.
 
-You can find it under the **Properties Panel > Output > Satellite** and the settings are pretty self-explanatory if you've ever rendered anything before.
+## Installation
+* ZIP the Satellite folder.
+* Under Preferences > Addons, click the Install button in the top-left and locate the ZIP folder you just created.
+* Activate the addon by clicking the tick next to the box that will appear in the list.
+
+You can find Satellite under the **Properties Panel > Output > Satellite**.
+
 
 ## Notes on Excluding and Including Objects
 * Satellite will exclude all collections in a scene unless they contain a specific string you define (by default this is "Skybox").
