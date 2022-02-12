@@ -125,11 +125,11 @@ def RestoreRenderSettings(self, context, saved_render_settings):
 
 
 
-class SATELLITE_OT_Render(Operator):
+class SATELLITE_OT_RenderSelected(Operator):
     """Renders the selected Bake Preset."""
 
     bl_idname = "scene.satl_render"
-    bl_label = "Render Skybox"
+    bl_label = "Render Selected"
 
     def execute(self, context):
 
@@ -169,6 +169,17 @@ class SATELLITE_OT_Render(Operator):
             scene.render.resolution_x = int(bake_options.resolution)
             scene.render.resolution_y = int(bake_options.resolution / 2)
             scene.render.image_settings.file_format = 'HDR'
+
+            # ensure some render settings are at their defaults
+            scene.render.resolution_percentage
+            scene.render.pixel_aspect_x
+            scene.render.pixel_aspect_y
+            scene.render.use_border
+
+            scene.render.use_multiview
+            scene.render.use_file_extension
+            scene.render.use_render_cache
+            scene.render.use_overwrite
 
             if bake_options.render_engine == 'Cycles':
                 scene.cycles.samples = bake_options.samples
