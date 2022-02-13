@@ -167,7 +167,7 @@ def RenderSkybox(self, context, satellite):
         scene.cycles.use_denoising = render_options.cycles_use_denoiser
     
     elif render_options.render_engine == 'Eevee':
-        scene.render.engine = 'EEVEE'
+        scene.render.engine = 'BLENDER_EEVEE'
         scene.eevee.taa_render_samples = render_options.samples
 
         if render_options.eevee_disable_pp is True:
@@ -229,15 +229,65 @@ def RenderDirectCamera(self, context, satellite):
     """Renders a direct camera defined by the satellite input"""
 
     scene = bpy.context.scene
-    render_options = satellite.data_skybox
+    render_options = satellite.data_camera
 
 
     # ///////////////////////////////////////
     # SCENE SETUP
-    
+    # change the view layer if we have one set
+    old_view = context.window.view_layer
+    target_view = None
+
+    if render_options.view_layer != "":
+        target_view = scene.view_layers[render_options.view_layer]
+        context.window.view_layer = target_view
+    else:
+        target_view = context.window.view_layer
 
     # If we have a Replacement Material set we need to 
     # save all renderable object materials before switching 
+    # NOTE - You have to sweep for all material slots
+    # NOTE2 - You have to handle objects that have no slots assigned
+    saved_object_mats = []
+    target_mat = render_options.replacement_material
+
+    # this may need to include POINTCLOUD in the future but not right now
+    valid_types = ['MESH', 'CURVE', 'SURFACE', 'META', 'FONT'
+        'HAIR', 'VOLUME', 'GPENCIL']
+
+    if render_options.replacement_material is not None:
+        for obj in target_view.objects:
+            valid_type = (obj.type in valid_types)
+            renderable = (obj.hide_render == False)
+
+            if valid_type is True and renderable is True:
+                mat_data = {}
+                mat_data['object'] = obj
+                mat_slots = obj.material_slots
+
+                has_slots = (len(mat_slots.values()) > 0)
+                mat_data['has_slots'] = has_slots
+
+                # Get slot data if we have it
+                if has_slots == True:
+                    slot_list = []
+                    for slot in mat_slots:
+                        slot_list.append(slot.name)
+                        mat_data['slots'] = slot_list
+                    
+                    # NOW WIPE EM
+                    for i in range(0, len(mat_slots.values())) :
+                        obj.active_material_index = i
+                        obj.active_material = target_mat
+                
+                # If we dont, assign a material
+                else:
+                    obj.active_material = target_mat
+
+                # Save the data for restoration later
+                saved_object_mats.append(mat_data)
+
+                pass
 
     # If a World Material has been defined, use it.
     old_world = scene.world
@@ -274,7 +324,7 @@ def RenderDirectCamera(self, context, satellite):
         scene.cycles.use_denoising = render_options.cycles_use_denoiser
     
     elif render_options.render_engine == 'Eevee':
-        scene.render.engine = 'EEVEE'
+        scene.render.engine = 'BLENDER_EEVEE'
         scene.eevee.taa_render_samples = render_options.samples
 
         if render_options.eevee_disable_pp is True:
@@ -284,7 +334,8 @@ def RenderDirectCamera(self, context, satellite):
             scene.eevee.use_motion_blur = False
 
     # render this bad boy *slaps side of car*
-    context.scene.camera = render_options.target_camera
+    camera_name = render_options.target_camera.name
+    context.scene.camera = bpy.data.objects[camera_name]
     name = satellite.output_dir
     dir = satellite.output_name
 
@@ -299,6 +350,31 @@ def RenderDirectCamera(self, context, satellite):
     if render_options.world_material is not None:
         scene.world = old_world
     
+    if render_options.replacement_material is not None:
+
+        for item in saved_object_mats:
+            obj = item['object']
+            materials = []
+
+            # If we had slots, replace them one after another
+            if item['has_slots'] == True:
+                for mat_name in item['slots']:
+                    materials.append(bpy.data.materials[mat_name])
+            
+                # NOW WIPE EM
+                for i in range(0, len(materials)) :
+                    obj.active_material_index = i
+                    obj.active_material = materials[i]
+            
+            # If we didn't, delete the active material
+            else:
+                bpy.ops.object.select_all(action='DESELECT')
+                bpy.context.view_layer.objects.active = obj
+                obj.select_set(state=True)
+                bpy.ops.object.material_slot_remove()
+
+    
+    context.window.view_layer = old_view
 
 
     report  = {}
@@ -347,12 +423,17 @@ def VerifyRenderSettings(self, context, verify_all):
         if sat.render_type == 'Direct Camera':
             sat_settings = sat.data_camera
 
-            if sat_settings.target_camera is None:
+            if sat_settings.target_camera.type is None:
                 report['status'] = 'FAILED'
                 report['info'] = "The Satellite " + sat.name + " needs a Target Camera set before rendering."
                 return report
+
+            elif sat_settings.target_camera.type != 'CAMERA':
+                report['status'] = 'FAILED'
+                report['info'] = "The Satellite " + sat.name + " doesn't have a Camera-type object specified in Target Camera, this needs to be set before rendering."
+                return report
             
-            if sat_settings.view_layer is not None:
+            if sat_settings.view_layer != "":
                 vl = sat_settings.view_layer
                 if scene.view_layers.find(vl) == -1:
                     report['status'] = 'FAILED'
@@ -384,6 +465,18 @@ class SATELLITE_OT_RenderSelected(Operator):
             self.report({'WARNING'}, verify_settings['info'])
             return {'FINISHED'}
 
+        # ////////////////////////////////////////////////////////////////////////////
+        # SAVE CONTEXT STATE
+
+        # ENSURE WE ARE IN THE RIGHT CONTEXT
+        old_region = bpy.context.area.type
+        bpy.context.area.type = 'VIEW_3D'
+        old_mode = context.active_object.mode
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        # SAVE SELECTED AND ACTIVE OBJECTS FIRST
+        old_selected_objects = context.selected_objects
+        old_active_object = context.active_object
 
         # store old properties for later
         old_render_settings = SaveRenderSettings(self, context)
@@ -394,17 +487,30 @@ class SATELLITE_OT_RenderSelected(Operator):
         satellite = sat_data.sat_presets[selected_render_index]
 
         # ////////////////////////////////////////////////////////////////////////////
-        # SKYBOX SETUP
+        # RENDER!
         report = None
 
         if satellite.render_type == 'Skybox':
             report = RenderSkybox(self, context, satellite)
-        elif satellite.render_type == 'Skybox':
-            report = RenderSkybox(self, context, satellite)
+        elif satellite.render_type == 'Direct Camera':
+            report = RenderDirectCamera(self, context, satellite)
 
+        # ////////////////////////////////////////////////////////////////////////////
+        # RESTORE CONTEXT STATE
 
         # Ensure render settings have been restored.
         RestoreRenderSettings(self, context, old_render_settings)
+
+        # Restore selected and active objects
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.context.view_layer.objects.active = old_active_object
+
+        for sel_obj in old_selected_objects:
+            sel_obj.select_set(state=True)
+
+        # Restore context
+        bpy.ops.object.mode_set(mode=old_mode)
+        bpy.context.area.type = old_region
         
         # TODO: Add a status bar and some flexible info dumps.
             

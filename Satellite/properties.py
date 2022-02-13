@@ -84,9 +84,9 @@ class SATELLITE_FormatCamera(PropertyGroup):
     instance_id: IntProperty(default=-1)
 
     target_camera: PointerProperty(
-        type = bpy.types.Camera,
+        type = bpy.types.Object,
         name = "Target Camera",
-        description = "Defines the camera to be used",
+        description = "Defines the camera to be used.  This camera will take on the name of the Camera datablock so it may be named differently to the name of the Camera when seen in the 3D or Hierarchy Views (you can check under Properties Panel > Object Data)",
     )
 
     view_layer: StringProperty(
@@ -106,8 +106,6 @@ class SATELLITE_FormatCamera(PropertyGroup):
         name = "Replacement Material",
         description = "If defined, any object included in the render will have their material replaced with the one defined here.  This is commonly used in conjunction with the camera to create world-space maps for use in shaders"
     )
-
-    
 
     render_engine: EnumProperty(
         name="Render Engine",
@@ -201,13 +199,12 @@ class SATELLITE_FormatCamera(PropertyGroup):
         description = "The bit depth per channel",
     )
 
-    compression: FloatProperty(
+    compression: IntProperty(
         name = "Compression",
         description = "The amount of time taken for Blender to determine the best compression for the file.  0 will result in no compression with a fast file output time and 100 will result in the maximum lossless compression with the slowest output time",
         default = 15,
         min = 0,
         max = 100,
-        precision = 1,
         subtype = 'PERCENTAGE',
     )
 
