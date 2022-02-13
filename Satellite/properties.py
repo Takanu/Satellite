@@ -28,7 +28,7 @@ class SATELLITE_FormatSkybox(PropertyGroup):
     
     include_collection: StringProperty(
         name="Include Collection",
-        description="Ensures that any collection matching this name in the scene will remain in the render",
+        description="Skybox baking by default will hide all objects in the Scene from rendering.  If this is defined any Collection with matching text will be included in the render",
         default="Skybox",
     )
 
@@ -89,6 +89,12 @@ class SATELLITE_FormatCamera(PropertyGroup):
         description = "Defines the camera to be used",
     )
 
+    view_layer: StringProperty(
+        name="Target View Layer",
+        description="Use this to define a View Layer that will be used when rendering the scene.  If left empty the currently active View Layer in the scene will be used",
+        default="",
+    )
+
     world_material: PointerProperty(
         type = bpy.types.World,
         name = "World Material",
@@ -101,11 +107,7 @@ class SATELLITE_FormatCamera(PropertyGroup):
         description = "If defined, any object included in the render will have their material replaced with the one defined here.  This is commonly used in conjunction with the camera to create world-space maps for use in shaders"
     )
 
-    view_layer: StringProperty(
-        name="Target View Layer",
-        description="If defined, this View Layer will be used when rendering the scene",
-        default="",
-    )
+    
 
     render_engine: EnumProperty(
         name="Render Engine",
@@ -115,7 +117,7 @@ class SATELLITE_FormatCamera(PropertyGroup):
             ('Cycles', "Cycles", "Use the Cycles Rendering Engine to render this skybox.  WARNING - Satellite will use the Compute Device you have selected, check this setting under Properties Panel > Render for optimal performance"),
             ),
             
-        description="The Render Engine that will be used to perform the render.  WARNING - Some World Material nodes can only be rendered using a certain Render Engine, ensure you select the one that is compatible with your World Material",
+        description="The Render Engine that will be used to perform the render.  WARNING - Some Materials can only be properly rendered using a certain Render Engine, ensure you select the one that is compatible with your World Material",
     )
 
     resolution_x: IntProperty(
@@ -214,7 +216,7 @@ class SATELLITE_FormatCamera(PropertyGroup):
     #TODO: Include additional settings.
 
 
-class SATELLITE_BakePreset(PropertyGroup):
+class SATELLITE_Preset(PropertyGroup):
     """
     Defines a single baking preset.
     """
@@ -274,10 +276,10 @@ class SATELLITE_SceneData(PropertyGroup):
     """
 
     # the available baking presets
-    bake_presets: CollectionProperty(type=SATELLITE_BakePreset)
+    sat_presets: CollectionProperty(type=SATELLITE_Preset)
 
     ## The index of the currently selected collection from the UI list.  Will be -1 if not selected.
-    bake_selected_list_index: IntProperty(default=0)
+    sat_selected_list_index: IntProperty(default=0)
 
     # the menu toggle for Skybox Bake Presets
     skybox_ui_options: EnumProperty(

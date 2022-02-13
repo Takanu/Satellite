@@ -2,28 +2,28 @@ import bpy
 from bpy.types import Menu, Panel, Operator, UIList
 
 
-class SATELLITE_OT_AddBake(Operator):
-    """Add a new Bake Preset"""
+class SATELLITE_OT_Add(Operator):
+    """Add a new Satellite"""
 
-    bl_idname = "scene.satl_add_bake"
-    bl_label = "Add Bake Preset"
+    bl_idname = "scene.satl_add"
+    bl_label = "Add Satellite"
 
     def execute(self, context):
         sat_data = context.scene.SATL_SceneData
-        new_bake = sat_data.bake_presets.add()
-        new_bake.name = "Bake " + str(len(sat_data.bake_presets))
+        new_bake = sat_data.sat_presets.add()
+        new_bake.name = "Satellite " + str(len(sat_data.sat_presets))
 
         return {'FINISHED'}
 
-class SATELLITE_OT_RemoveBake(Operator):
-    """Remove the selected Bake Preset"""
+class SATELLITE_OT_Remove(Operator):
+    """Remove the selected Satellite"""
 
-    bl_idname = "scene.satl_remove_bake"
-    bl_label = "Remove Bake Preset"
+    bl_idname = "scene.satl_remove"
+    bl_label = "Remove Satellite"
 
     def execute(self, context):
         sat_data = context.scene.SATL_SceneData
-        sat_data.bake_presets.remove(sat_data.bake_selected_list_index)
+        sat_data.sat_presets.remove(sat_data.sat_selected_list_index)
 
         return {'FINISHED'}
 
@@ -54,14 +54,14 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
         # LIST MENU
         ui_list_area = layout.row(align=True)
         ui_list_column = ui_list_area.column(align=True)
-        ui_list_column.template_list("SATELLITE_UL_PresetList", "default", sat_data, "bake_presets", 
-                                    sat_data, "bake_selected_list_index", rows=3, maxrows=6)
+        ui_list_column.template_list("SATELLITE_UL_PresetList", "default", sat_data, "sat_presets", 
+                                    sat_data, "sat_selected_list_index", rows=3, maxrows=6)
         ui_list_column.operator("scene.satl_render")
         ui_list_column.separator()
 
         ui_list_column = ui_list_area.column(align=True)
-        ui_list_column.operator("scene.satl_add_bake", text="", icon="ADD")
-        ui_list_column.operator("scene.satl_remove_bake", text="", icon="REMOVE")
+        ui_list_column.operator("scene.satl_add", text="", icon="ADD")
+        ui_list_column.operator("scene.satl_remove", text="", icon="REMOVE")
         #ui_list_column.operator("scene.cap_shiftup", text="", icon="TRIA_UP")
         #ui_list_column.operator("scene.cap_shiftdown", text="", icon="TRIA_DOWN")
     
@@ -71,13 +71,13 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
         bake_options_area = layout.column(align=False)
 
         count = 0
-        for i, item in enumerate(sat_data.bake_presets, 1):
+        for i, item in enumerate(sat_data.sat_presets, 1):
             count += 1
         
-        list_index = sat_data.bake_selected_list_index
+        list_index = sat_data.sat_selected_list_index
 
         if list_index > -1 and list_index < count:
-            bake_selected = sat_data.bake_presets[list_index]
+            bake_selected = sat_data.sat_presets[list_index]
             bake_output = bake_options_area.column(align=True)
             bake_output.use_property_split = True
             bake_output.use_property_decorate = False
@@ -158,11 +158,10 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
 
                 # Scene Settings
                 bake_format_options.prop(bake_format, "target_camera")
+                bake_format_options.prop(bake_format, "view_layer")
                 bake_format_options.separator()
                 bake_format_options.prop(bake_format, "world_material")
                 bake_format_options.prop(bake_format, "replacement_material")
-                bake_format_options.separator()
-                bake_format_options.prop(bake_format, "view_layer")
                 bake_format_options.separator()
                 bake_format_options.separator()
                 bake_format_options.separator()
