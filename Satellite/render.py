@@ -146,27 +146,28 @@ def RenderSkybox(self, context, satellite):
 
     # ///////////////////////////////////////
     # CAMERA + WORLD
-    scene.render.engine = 'CYCLES'
     scene.render.resolution_x = int(render_options.resolution)
     scene.render.resolution_y = int(render_options.resolution / 2)
     scene.render.image_settings.file_format = 'HDR'
 
     # ensure some render settings are at their defaults
-    scene.render.resolution_percentage
-    scene.render.pixel_aspect_x
-    scene.render.pixel_aspect_y
-    scene.render.use_border
+    scene.render.resolution_percentage = 100
+    scene.render.pixel_aspect_x = 1.0
+    scene.render.pixel_aspect_y = 1.0
+    scene.render.use_border = False
 
-    scene.render.use_multiview
-    scene.render.use_file_extension
-    scene.render.use_render_cache
-    scene.render.use_overwrite
+    scene.render.use_multiview = False
+    scene.render.use_file_extension = True
+    scene.render.use_render_cache = False
+    scene.render.use_overwrite = True
 
     if render_options.render_engine == 'Cycles':
+        scene.render.engine = 'CYCLES'
         scene.cycles.samples = render_options.samples
         scene.cycles.use_denoising = render_options.cycles_use_denoiser
     
     elif render_options.render_engine == 'Eevee':
+        scene.render.engine = 'EEVEE'
         scene.eevee.taa_render_samples = render_options.samples
 
         if render_options.eevee_disable_pp is True:
@@ -226,6 +227,85 @@ def RenderSkybox(self, context, satellite):
 
 def RenderDirectCamera(self, context, satellite):
     """Renders a direct camera defined by the satellite input"""
+
+    scene = bpy.context.scene
+    render_options = satellite.data_skybox
+
+
+    # ///////////////////////////////////////
+    # SCENE SETUP
+    
+
+    # If we have a Replacement Material set we need to 
+    # save all renderable object materials before switching 
+
+    # If a World Material has been defined, use it.
+    old_world = scene.world
+    if render_options.world_material is not None:
+        scene.world = render_options.world_material
+
+
+    # ///////////////////////////////////////
+    # OUTPUT
+    scene.render.resolution_x = int(render_options.resolution_x)
+    scene.render.resolution_y = int(render_options.resolution_y)
+    scene.render.image_settings.file_format = render_options.file_format
+    scene.render.image_settings.color_depth = render_options.color_depth
+    scene.render.image_settings.color_mode = render_options.color_mode
+    scene.render.image_settings.compression = render_options.compression
+
+    # ensure some render settings are at their defaults
+    scene.render.resolution_percentage = 100
+    scene.render.pixel_aspect_x = 1.0
+    scene.render.pixel_aspect_y = 1.0
+    scene.render.use_border = False
+
+    scene.render.use_multiview = False
+    scene.render.use_file_extension = True
+    scene.render.use_render_cache = False
+    scene.render.use_overwrite = True
+    
+
+    # ///////////////////////////////////////
+    # RENDER
+    if render_options.render_engine == 'Cycles':
+        scene.render.engine = 'CYCLES'
+        scene.cycles.samples = render_options.samples
+        scene.cycles.use_denoising = render_options.cycles_use_denoiser
+    
+    elif render_options.render_engine == 'Eevee':
+        scene.render.engine = 'EEVEE'
+        scene.eevee.taa_render_samples = render_options.samples
+
+        if render_options.eevee_disable_pp is True:
+            scene.eevee.use_gtao = False
+            scene.eevee.use_bloom = False
+            scene.eevee.use_ssr = False
+            scene.eevee.use_motion_blur = False
+
+    # render this bad boy *slaps side of car*
+    context.scene.camera = render_options.target_camera
+    name = satellite.output_dir
+    dir = satellite.output_name
+
+    destination = os.path.join(name, dir)
+    bpy.context.scene.render.filepath = destination
+    bpy.context.scene.render.use_single_layer = True
+    bpy.ops.render.render(write_still = True)
+
+
+    # ////////////////////////////////////////
+    # CLEAN UP
+    if render_options.world_material is not None:
+        scene.world = old_world
+    
+
+
+    report  = {}
+    report['status'] = 'FINISHED'
+    report['destination'] = destination
+    return report
+
     pass
 
 # /////////////////////////////////////////////////////////////////////////
@@ -266,10 +346,19 @@ def VerifyRenderSettings(self, context, verify_all):
         # check for cameras
         if sat.render_type == 'Direct Camera':
             sat_settings = sat.data_camera
+
             if sat_settings.target_camera is None:
                 report['status'] = 'FAILED'
                 report['info'] = "The Satellite " + sat.name + " needs a Target Camera set before rendering."
                 return report
+            
+            if sat_settings.view_layer is not None:
+                vl = sat_settings.view_layer
+                if scene.view_layers.find(vl) == -1:
+                    report['status'] = 'FAILED'
+                    report['info'] = "The Satellite " + sat.name + "'s Target View Layer doesn't exist, please double-check the name provided."
+                    return report
+                
 
     
     report['status'] = 'SUCCESS'
