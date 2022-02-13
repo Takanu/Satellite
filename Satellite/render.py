@@ -10,7 +10,7 @@ from mathutils import Vector
 
 def SaveRenderSettings(self, context):
     """
-    Saves all relevant render settings before attempting to bake with Satellite.
+    Saves all relevant render settings before attempting to render with Satellite.
     NOTE: This will only save settings that Satellite may need to change, not every
     possible rendering feature.
     """
@@ -133,22 +133,22 @@ def RenderSkybox(self, context, satellite):
     """Renders a skybox defined by the satellite input"""
 
     scene = bpy.context.scene
-    bake_options = satellite.data_skybox
+    render_options = satellite.data_skybox
 
     # create a new view layer and hide everything
-    bake_viewlayer = context.scene.view_layers.new(name="Satellite Bake")
-    context.window.view_layer = bake_viewlayer
+    render_viewlayer = context.scene.view_layers.new(name="Satellite Render")
+    context.window.view_layer = render_viewlayer
 
-    for layer in bake_viewlayer.layer_collection.children:
-        if bake_options.include_collection in layer.name:
+    for layer in render_viewlayer.layer_collection.children:
+        if render_options.include_collection in layer.name:
             layer.exclude = True
 
 
     # ///////////////////////////////////////
     # CAMERA + WORLD
     scene.render.engine = 'CYCLES'
-    scene.render.resolution_x = int(bake_options.resolution)
-    scene.render.resolution_y = int(bake_options.resolution / 2)
+    scene.render.resolution_x = int(render_options.resolution)
+    scene.render.resolution_y = int(render_options.resolution / 2)
     scene.render.image_settings.file_format = 'HDR'
 
     # ensure some render settings are at their defaults
@@ -162,14 +162,14 @@ def RenderSkybox(self, context, satellite):
     scene.render.use_render_cache
     scene.render.use_overwrite
 
-    if bake_options.render_engine == 'Cycles':
-        scene.cycles.samples = bake_options.samples
-        scene.cycles.use_denoising = bake_options.cycles_use_denoiser
+    if render_options.render_engine == 'Cycles':
+        scene.cycles.samples = render_options.samples
+        scene.cycles.use_denoising = render_options.cycles_use_denoiser
     
-    elif bake_options.render_engine == 'Eevee':
-        scene.eevee.taa_render_samples = bake_options.samples
+    elif render_options.render_engine == 'Eevee':
+        scene.eevee.taa_render_samples = render_options.samples
 
-        if bake_options.eevee_disable_pp is True:
+        if render_options.eevee_disable_pp is True:
             scene.eevee.use_gtao = False
             scene.eevee.use_bloom = False
             scene.eevee.use_ssr = False
@@ -191,8 +191,8 @@ def RenderSkybox(self, context, satellite):
 
     # If a World Material has been defined, use it.
     old_world = scene.world
-    if bake_options.world_material is not None:
-        scene.world = bake_options.world_material
+    if render_options.world_material is not None:
+        scene.world = render_options.world_material
     
     # ///////////////////////////////////////
     # RENDER
@@ -209,11 +209,11 @@ def RenderSkybox(self, context, satellite):
 
     # ////////////////////////////////////////
     # CLEAN UP
-    if bake_options.world_material is not None:
+    if render_options.world_material is not None:
         scene.world = old_world
 
     bpy.data.objects.remove(bpy.data.objects[camera_name], do_unlink=True)
-    context.scene.view_layers.remove(bake_viewlayer)
+    context.scene.view_layers.remove(render_viewlayer)
     
     report  = {}
     report['status'] = 'FINISHED'
@@ -232,18 +232,48 @@ def RenderDirectCamera(self, context, satellite):
 # /////////////////////////////////////////////////////////////////////////
 
 
-def VerifyBakeSettings(self, context, verify_all):
-    """Checks that all settings have been correctly set before baking"""
+def VerifyRenderSettings(self, context, verify_all):
+    """Checks that all settings have been correctly set before rendering"""
+
+    report = {}
+
+    scene = context.scene
+    sat_data = scene.SATL_SceneData
+    satellites = sat_data.sat_presets
+    sat_selected = sat_data.sat_selected_list_index
+
+    satellite_queue = []
+    if verify_all is True:
+        for sat in satellites:
+            if sat.is_active is True:
+                satellite_queue.append(satellites)
+    else:
+        satellite_queue.append(satellites[sat_selected])
+
+    for sat in satellite_queue:
+
+        # check output directories
+        if sat.output_dir == "":
+            report['status'] = 'FAILED'
+            report['info'] = "The Satellite " + sat.name + " needs an Output Directory set before rendering."
+            return report
+
+        if sat.output_name == "":
+            report['status'] = 'FAILED'
+            report['info'] = "The Satellite " + sat.name + " needs an Output Name set before rendering."
+            return report
+        
+        # check for cameras
+        if sat.render_type == 'Direct Camera':
+            sat_settings = sat.data_camera
+            if sat_settings.target_camera is None:
+                report['status'] = 'FAILED'
+                report['info'] = "The Satellite " + sat.name + " needs a Target Camera set before rendering."
+                return report
 
     
-
-    # check output directories
-
-    # DIRECT CAMERA
-    # check for cameras
-
-
-    pass
+    report['status'] = 'SUCCESS'
+    return report
 
 
 # /////////////////////////////////////////////////////////////////////////
@@ -260,26 +290,27 @@ class SATELLITE_OT_RenderSelected(Operator):
         scene = bpy.context.scene
         
         # Perform some safety checks to ensure we have what we need
-
-
-
+        verify_settings = VerifyRenderSettings(self, context, False)
+        if verify_settings['status'] != 'SUCCESS':
+            self.report({'WARNING'}, verify_settings['info'])
+            return {'FINISHED'}
 
 
         # store old properties for later
         old_render_settings = SaveRenderSettings(self, context)
 
-        # Get the selected bake preset and check it's type
+        # Get the selected render preset and check it's type
         sat_data = scene.SATL_SceneData
-        selected_bake_index = sat_data.sat_selected_list_index
-        satellite = sat_data.sat_presets[selected_bake_index]
+        selected_render_index = sat_data.sat_selected_list_index
+        satellite = sat_data.sat_presets[selected_render_index]
 
         # ////////////////////////////////////////////////////////////////////////////
         # SKYBOX SETUP
         report = None
 
-        if satellite.bake_type == 'Skybox':
+        if satellite.render_type == 'Skybox':
             report = RenderSkybox(self, context, satellite)
-        elif satellite.bake_type == 'Skybox':
+        elif satellite.render_type == 'Skybox':
             report = RenderSkybox(self, context, satellite)
 
 

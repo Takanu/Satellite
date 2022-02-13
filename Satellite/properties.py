@@ -15,7 +15,7 @@ from bpy.props import (
 
 
 class SATELLITE_FormatSkybox(PropertyGroup):
-    # Used to define settings for a Skybox bake.
+    # Used to define settings for a Skybox render.
 
     # Binds a format to a specific preset, (TODO: Check if we need this!)
     instance_id: IntProperty(default=-1)
@@ -229,7 +229,7 @@ class SATELLITE_Preset(PropertyGroup):
     
     is_active: BoolProperty(
         name = "Active",
-        description = "Determines whether this camera will be baked or not if 'Bake All Active' is used.",
+        description = "Determines whether this camera will be rendered or not if 'Render All Active' is used.",
         default = True,
     )
 
@@ -246,15 +246,15 @@ class SATELLITE_Preset(PropertyGroup):
         default = "",
     )
 
-    bake_type: EnumProperty(
-        name="Bake Type",
+    render_type: EnumProperty(
+        name="Render Type",
         items=
             (
-            ('Skybox', "Skybox", "Bake a defined World Material into an HDRI Image.  Satellite will setup the camera and scene for you."),
-            ('Direct Camera', "Direct Camera", "Bake an image from a specific camera in the scene."),
+            ('Skybox', "Skybox", "render a defined World Material into an HDRI Image.  Satellite will setup the camera and scene for you."),
+            ('Direct Camera', "Direct Camera", "render an image from a specific camera in the scene."),
             ),
             
-        description="Defines the purpose of the bake and the sets of settings Satellite will use in order to perform it.",
+        description="Defines the purpose of the render and the sets of settings Satellite will use in order to perform it.",
     )
     
     # might need this for satellite, undetermined
@@ -281,9 +281,9 @@ class SATELLITE_SceneData(PropertyGroup):
     ## The index of the currently selected collection from the UI list.  Will be -1 if not selected.
     sat_selected_list_index: IntProperty(default=0)
 
-    # the menu toggle for Skybox Bake Presets
+    # the menu toggle for Skybox render Presets
     skybox_ui_options: EnumProperty(
-        name = "Skybox Bake Options",
+        name = "Skybox Render Options",
         description = "bonk",
         items =
             (
@@ -292,7 +292,7 @@ class SATELLITE_SceneData(PropertyGroup):
             ),
     )
 
-    # the menu toggle for Direct Camera Bake Presets
+    # the menu toggle for Direct Camera render Presets
     camera_ui_options: EnumProperty(
         name = "FUCKKkkKK",
         description = "boop",
