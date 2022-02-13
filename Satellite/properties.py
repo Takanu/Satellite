@@ -83,6 +83,15 @@ class SATELLITE_FormatSkybox(PropertyGroup):
         description = "Choose BW for saving grayscale images, RGB for saving red, green and blue channels, and RGBA for saving red, green, blue and alpha channels",
     )
 
+
+
+# Ensures all color mode properties are synced wherever possible.
+def UPDATE_ColorModeBW(self, context):
+    self.color_mode = self.color_mode_bw
+
+def UPDATE_ColorModeFull(self, context):
+    if self.color_mode != 'RGBA':
+        self.color_mode_bw = self.color_mode
     
 
 
@@ -182,36 +191,63 @@ class SATELLITE_FormatCamera(PropertyGroup):
         description = "The file type to save the rendered image as.",
     )
 
+    # only PNG, JPEG 2000, DPX and TIFF file formats offer color depth options
+    # only PNG is currently offered by Satellite so no need for the other channels right now.
     color_depth: EnumProperty(
         name = "Color Depth",
         items =
             (
             ('8', "8", "8-bit color channels"),
-            ('10', "10", "10-bit color channels"),
-            ('12', "12", "12-bit color channels"),
+            # ('10', "10", "10-bit color channels"),
+            # ('12', "12", "12-bit color channels"),
             ('16', "16", "16-bit color channels"),
-            ('32', "32", "32-bit color channels"),
+            # ('32', "32", "32-bit color channels"),
             ),
         default = '8',
-        description = "The bit depth per channel",
+        description = "The bit depth per channel.  WARNING - Not all file formats support all color depth options, check the Output panel for more info",
     )
 
+    # BONK - This is the one that gets used by the renderer.
+    # supported by all but the formats in the next property.
     color_mode: EnumProperty(
         name = "Color Mode",
         items =
             (
-            ('BW', "BW", "Images get saved in 8-bit grayscale (only PNG, JPEG, TGA, TIF)"),
+            ('BW', "BW", "Images get saved in 8-bit grayscale"),
             ('RGB', "RGB", "Images are saved with RGB (color) data"),
-            ('RGBA', "RGBA", "Images are saved with RGB and Alpha data (if supported)"),
+            ('RGBA', "RGBA", "Images are saved with RGB and Alpha data"),
             ),
-        default = 'BW',
-        description = "Choose BW for saving grayscale images, RGB for saving red, green and blue channels, and RGBA for saving red, green, blue and alpha channels",
+        default = 'RGB',
+        description = "Choose BW for saving grayscale images, RGB for saving red, green and blue channels, and RGBA for saving red, green, blue and alpha channels.  WARNING - Not all file formats support all color modes, check the Output panel for more info",
+        update = UPDATE_ColorModeFull,
+    )
+
+    # the only range supported by JPG, Cineon, Radiance HDR
+    color_mode_bw: EnumProperty(
+        name = "Color Mode",
+        items =
+            (
+            ('BW', "BW", "Images get saved in 8-bit grayscale"),
+            ('RGB', "RGB", "Images are saved with RGB (color) data"),
+            ),
+        default = 'RGB',
+        description = "Choose BW for saving grayscale images and RGB for saving red, green and blue channels",
+        update = UPDATE_ColorModeBW,
     )
 
     compression: IntProperty(
         name = "Compression",
         description = "The amount of time taken for Blender to determine the best compression for the file.  0 will result in no compression with a fast file output time and 100 will result in the maximum lossless compression with the slowest output time",
         default = 15,
+        min = 0,
+        max = 100,
+        subtype = 'PERCENTAGE',
+    )
+
+    quality: IntProperty(
+        name = "Quality",
+        description = "Quality for image formats that support lossy compression",
+        default = 90,
         min = 0,
         max = 100,
         subtype = 'PERCENTAGE',
@@ -287,38 +323,29 @@ class SATELLITE_SceneData(PropertyGroup):
     ## The index of the currently selected collection from the UI list.  Will be -1 if not selected.
     sat_selected_list_index: IntProperty(default=0)
 
-    # the menu toggle for Skybox render Presets
-    skybox_ui_options: EnumProperty(
-        name = "Skybox Render Options",
-        description = "bonk",
-        items =
-            (
-            ('Scene', "Scene", "bonk"),
-            ('Render', "Render", "bonk"),
-            ),
-    )
+    # the menu toggle for Skybox render Presets, tabs didnt work out so this is muted for now
+    # skybox_ui_options: EnumProperty(
+    #     name = "Skybox Render Options",
+    #     description = "bonk",
+    #     items =
+    #         (
+    #         ('Scene', "Scene", "bonk"),
+    #         ('Render', "Render", "bonk"),
+    #         ),
+    # )
 
-    # the menu toggle for Direct Camera render Presets
-    camera_ui_options: EnumProperty(
-        name = "FUCKKkkKK",
-        description = "boop",
-        items =
-            (
-            ('Scene', "Scene", "bonk"),
-            ('Render', "Render", "bonk"),
-            ('Format', "Format", "bonk"),
-            ),
+    # # the menu toggle for Direct Camera render Presets
+    # camera_ui_options: EnumProperty(
+    #     name = "Direct Camera Render Options",
+    #     description = "boop",
+    #     items =
+    #         (
+    #         ('Scene', "Scene", "bonk"),
+    #         ('Render', "Render", "bonk"),
+    #         ('Format', "Format", "bonk"),
+    #         ),
         
-    )
+    # )
 
-    obj_menu_options: EnumProperty(
-        name="Export Options",
-        description="",
-        items=(
-        ('File', 'File', 'A tab containing file format-specific data sets like custom properties.'),
-        ('Scene', 'Scene', 'A tab containing options for scene units, transform data and object type export filters.'),
-        ('Mesh', 'Mesh', 'A tab containing options for how object geometry and mesh-related assets are exported.'),
-        ),
-    )
 
     

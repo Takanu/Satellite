@@ -203,11 +203,27 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
                 # Export Format Settings
                 render_format_options.prop(render_format, "file_format")
                 render_format_options.separator()
-                render_format_col_depth = render_format_options.row(align=True)
-                render_format_col_depth.prop(render_format, "color_depth", expand=True)
-                render_format_col_mode = render_format_options.row(align=True)
-                render_format_col_mode.prop(render_format, "color_mode", expand=True)
-                render_format_options.prop(render_format, "compression")
+
+                file_format = render_format.file_format
+
+                if file_format in ['JPEG', 'CINEON', 'HDR']:
+                    render_format_col_mode = render_format_options.row(align=True)
+                    render_format_col_mode.prop(render_format, "color_mode_bw", expand=True)
+                
+                else:
+                    render_format_col_mode = render_format_options.row(align=True)
+                    render_format_col_mode.prop(render_format, "color_mode", expand=True)
+
+                if file_format in ['PNG']:
+                    render_format_col_depth = render_format_options.row(align=True)
+                    render_format_col_depth.prop(render_format, "color_depth", expand=True)
+                
+                if file_format in ['PNG']:
+                    render_format_options.prop(render_format, "compression")
+                
+                if file_format in ['JPEG']:
+                    render_format_options.prop(render_format, "quality")
+
                 render_format_options.separator()
                 render_format_options.separator()
 

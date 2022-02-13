@@ -303,6 +303,7 @@ def RenderDirectCamera(self, context, satellite):
     scene.render.image_settings.file_format = render_options.file_format
     scene.render.image_settings.color_depth = render_options.color_depth
     scene.render.image_settings.color_mode = render_options.color_mode
+    scene.render.image_settings.quality = render_options.quality
     scene.render.image_settings.compression = render_options.compression
 
     # ensure some render settings are at their defaults
@@ -472,8 +473,10 @@ class SATELLITE_OT_RenderSelected(Operator):
         # ENSURE WE ARE IN THE RIGHT CONTEXT
         old_region = bpy.context.area.type
         bpy.context.area.type = 'VIEW_3D'
-        old_mode = context.active_object.mode
-        bpy.ops.object.mode_set(mode='OBJECT')
+        old_mode = ''
+        if context.active_object is not None:
+            old_mode = context.active_object.mode
+            bpy.ops.object.mode_set(mode='OBJECT')
 
         # SAVE SELECTED AND ACTIVE OBJECTS FIRST
         old_selected_objects = context.selected_objects
@@ -510,7 +513,8 @@ class SATELLITE_OT_RenderSelected(Operator):
             sel_obj.select_set(state=True)
 
         # Restore context
-        bpy.ops.object.mode_set(mode=old_mode)
+        if old_mode != '':
+            bpy.ops.object.mode_set(mode=old_mode)
         bpy.context.area.type = old_region
         
         # TODO: Add a status bar and some flexible info dumps.
