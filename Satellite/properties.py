@@ -72,9 +72,18 @@ class SATELLITE_FormatSkybox(PropertyGroup):
         default=False,
     )
 
-    
+    color_mode: EnumProperty(
+        name = "Color Mode",
+        items =
+            (
+            ('BW', "BW", "Images get saved in 8-bit grayscale"),
+            ('RGB', "RGB", "Images are saved with RGB (color) data"),
+            ),
+        default = 'RGB',
+        description = "Choose BW for saving grayscale images, RGB for saving red, green and blue channels, and RGBA for saving red, green, blue and alpha channels",
+    )
 
-    #TODO: Include different image format types.
+    
 
 
 class SATELLITE_FormatCamera(PropertyGroup):
@@ -191,12 +200,12 @@ class SATELLITE_FormatCamera(PropertyGroup):
         name = "Color Mode",
         items =
             (
-            ('BW', "BW", "Export using the PNG format"),
-            ('RGB', "RGB", "Export using the JPEG format"),
-            ('RGBA', "RGBA", "Export using the Targa format"),
+            ('BW', "BW", "Images get saved in 8-bit grayscale (only PNG, JPEG, TGA, TIF)"),
+            ('RGB', "RGB", "Images are saved with RGB (color) data"),
+            ('RGBA', "RGBA", "Images are saved with RGB and Alpha data (if supported)"),
             ),
         default = 'BW',
-        description = "The bit depth per channel",
+        description = "Choose BW for saving grayscale images, RGB for saving red, green and blue channels, and RGBA for saving red, green, blue and alpha channels",
     )
 
     compression: IntProperty(

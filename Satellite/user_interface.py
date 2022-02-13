@@ -56,7 +56,8 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
         ui_list_column = ui_list_area.column(align=True)
         ui_list_column.template_list("SATELLITE_UL_PresetList", "default", sat_data, "sat_presets", 
                                     sat_data, "sat_selected_list_index", rows=3, maxrows=6)
-        ui_list_column.operator("scene.satl_render")
+        ui_list_column.operator("scene.satl_render_selected")
+        ui_list_column.operator("scene.satl_render_all")
         ui_list_column.separator()
 
         ui_list_column = ui_list_area.column(align=True)
@@ -132,14 +133,20 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
                     render_format_list_denoiser = render_format_options.column(align=True, 
                         heading="Use Denoiser")
                     render_format_list_denoiser.prop(render_format, "cycles_use_denoiser", text="")
-                    render_format_options.separator()
-                
+
                 elif render_format.render_engine == 'Eevee':
                     # This is used to ensure the boolean label is aligned.
                     render_format_list_denoiser = render_format_options.column(align=True, 
                         heading="Disable Post-Processing")
                     render_format_list_denoiser.prop(render_format, "eevee_disable_pp", text="")
-                    render_format_options.separator()
+                
+                render_format_options.separator()
+                render_format_options.separator()
+                render_format_options.separator()
+                render_format_col_mode = render_format_options.row(align=True)
+                render_format_col_mode.prop(render_format, "color_mode", expand=True)
+                render_format_options.separator()
+                render_format_options.separator()
 
             
 

@@ -149,6 +149,7 @@ def RenderSkybox(self, context, satellite):
     scene.render.resolution_x = int(render_options.resolution)
     scene.render.resolution_y = int(render_options.resolution / 2)
     scene.render.image_settings.file_format = 'HDR'
+    scene.render.image_settings.color_mode = render_options.color_mode
 
     # ensure some render settings are at their defaults
     scene.render.resolution_percentage = 100
@@ -452,7 +453,7 @@ def VerifyRenderSettings(self, context, verify_all):
 class SATELLITE_OT_RenderSelected(Operator):
     """Renders the selected Satellite"""
 
-    bl_idname = "scene.satl_render"
+    bl_idname = "scene.satl_render_selected"
     bl_label = "Render Selected"
 
     def execute(self, context):
@@ -500,6 +501,78 @@ class SATELLITE_OT_RenderSelected(Operator):
 
         # Ensure render settings have been restored.
         RestoreRenderSettings(self, context, old_render_settings)
+
+        # Restore selected and active objects
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.context.view_layer.objects.active = old_active_object
+
+        for sel_obj in old_selected_objects:
+            sel_obj.select_set(state=True)
+
+        # Restore context
+        bpy.ops.object.mode_set(mode=old_mode)
+        bpy.context.area.type = old_region
+        
+        # TODO: Add a status bar and some flexible info dumps.
+            
+        if report != None:
+            self.report({'INFO'}, "The Skybox has been saved to " + report['destination'] + ".")
+
+        return {'FINISHED'}
+
+
+class SATELLITE_OT_RenderAllActive(Operator):
+    """Renders all active Satellites"""
+
+    bl_idname = "scene.satl_render_all"
+    bl_label = "Render All Active"
+
+    def execute(self, context):
+
+        scene = bpy.context.scene
+        
+        # Perform some safety checks to ensure we have what we need
+        verify_settings = VerifyRenderSettings(self, context, False)
+        if verify_settings['status'] != 'SUCCESS':
+            self.report({'WARNING'}, verify_settings['info'])
+            return {'FINISHED'}
+
+        # ////////////////////////////////////////////////////////////////////////////
+        # SAVE CONTEXT STATE
+
+        # ENSURE WE ARE IN THE RIGHT CONTEXT
+        old_region = bpy.context.area.type
+        bpy.context.area.type = 'VIEW_3D'
+        old_mode = context.active_object.mode
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        # SAVE SELECTED AND ACTIVE OBJECTS FIRST
+        old_selected_objects = context.selected_objects
+        old_active_object = context.active_object
+
+        # Get the selected render preset and check it's type
+        sat_data = scene.SATL_SceneData
+        selected_render_index = sat_data.sat_selected_list_index
+        satellite = sat_data.sat_presets[selected_render_index]
+
+        # ////////////////////////////////////////////////////////////////////////////
+        # RENDER!
+        report = None
+
+        for satellite in sat_data.sat_presets:
+            if satellite.is_active is True:
+                # store old properties for later
+                old_render_settings = SaveRenderSettings(self, context)
+
+                if satellite.render_type == 'Skybox':
+                    report = RenderSkybox(self, context, satellite)
+                elif satellite.render_type == 'Direct Camera':
+                    report = RenderDirectCamera(self, context, satellite)
+
+                RestoreRenderSettings(self, context, old_render_settings)
+
+        # ////////////////////////////////////////////////////////////////////////////
+        # RESTORE CONTEXT STATE
 
         # Restore selected and active objects
         bpy.ops.object.select_all(action='DESELECT')
