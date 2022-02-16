@@ -26,10 +26,10 @@ class SATELLITE_FormatSkybox(PropertyGroup):
         description = "Defines the world material that will be used for Skybox baking.  If left blank the currently defined World Material will be used"
     )
     
-    include_collection: StringProperty(
-        name="Include Collection",
-        description="Skybox baking by default will hide all objects in the Scene from rendering.  If this is defined any Collection with matching text will be included in the render",
-        default="Skybox",
+    view_layer: StringProperty(
+        name="Target View Layer",
+        description="If defined the View Layer's Viewport Visibility will be used to decide what objects in the scene will be rendered (this is due to the fact that Render Visibility cannot change between View Layers).  By default everything in the scene will be hidden",
+        default="",
     )
 
     render_engine: EnumProperty(

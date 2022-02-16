@@ -163,12 +163,28 @@ def RenderSkybox(self, context, satellite):
     scene = bpy.context.scene
     render_options = satellite.data_skybox
 
-    # create a new view layer and hide everything
-    render_viewlayer = context.scene.view_layers.new(name="Satellite Render")
-    context.window.view_layer = render_viewlayer
+    old_view = context.window.view_layer 
+    target_view = None
+    saved_render_state = []
+    
+    if render_options.view_layer != "":
+        target_view = scene.view_layers[render_options.view_layer]
+        context.window.view_layer = target_view
+        
+        # archive the render state
+        saved_render_state = SaveRenderingState(self, context)
 
-    for layer in render_viewlayer.layer_collection.children:
-        if render_options.include_collection in layer.name:
+        # go through the View Layer and match the viewport visibility
+        # to the render visibility
+        for obj in target_view.objects:
+            obj.hide_render = obj.hide_get(view_layer = target_view)
+
+    else:
+        # create a new view layer and hide everything
+        render_viewlayer = context.scene.view_layers.new(name="Satellite Render")
+        context.window.view_layer = render_viewlayer
+
+        for layer in render_viewlayer.layer_collection.children:
             layer.exclude = True
 
 
@@ -243,7 +259,14 @@ def RenderSkybox(self, context, satellite):
         scene.world = old_world
 
     bpy.data.objects.remove(bpy.data.objects[camera_name], do_unlink=True)
-    context.scene.view_layers.remove(render_viewlayer)
+
+    if render_options.view_layer != "":
+        RestoreRenderingState(self, context, saved_render_state)
+
+    else:
+        context.scene.view_layers.remove(render_viewlayer)
+    
+    context.window.view_layer = old_view
     
     report  = {}
     report['status'] = 'FINISHED'

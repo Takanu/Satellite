@@ -115,8 +115,7 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
 
                 # Scene Settings
                 render_format_options.prop(render_format, "world_material")
-                render_format_options.separator()
-                render_format_options.prop(render_format, "include_collection")
+                render_format_options.prop(render_format, "view_layer")
                 render_format_options.separator()
                 render_format_options.separator()
                 render_format_options.separator()
