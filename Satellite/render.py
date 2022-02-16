@@ -129,6 +129,34 @@ def RestoreRenderSettings(self, context, saved_render_settings):
 # /////////////////////////////////////////////////////////////////////////
 # /////////////////////////////////////////////////////////////////////////
 
+
+def SaveRenderingState(self, context):
+    """Saves the rendering state of objects in the scene before modifying them."""
+
+    render_state = []
+    for obj in context.scene.objects:
+        state = {}
+        state['object'] = obj
+        state['hide_render'] = obj.hide_render
+    
+    return render_state
+
+
+# /////////////////////////////////////////////////////////////////////////
+# /////////////////////////////////////////////////////////////////////////
+
+
+def RestoreRenderingState(self, context, render_state):
+    """Restores the rendering state of objects in the scene."""
+
+    for state in render_state:
+        state['object'].hide_render = state['hide_render']
+
+
+
+# /////////////////////////////////////////////////////////////////////////
+# /////////////////////////////////////////////////////////////////////////
+
 def RenderSkybox(self, context, satellite):
     """Renders a skybox defined by the satellite input"""
 
@@ -238,10 +266,20 @@ def RenderDirectCamera(self, context, satellite):
     # change the view layer if we have one set
     old_view = context.window.view_layer
     target_view = None
+    saved_render_state = []
 
     if render_options.view_layer != "":
         target_view = scene.view_layers[render_options.view_layer]
         context.window.view_layer = target_view
+        
+        # archive the render state
+        saved_render_state = SaveRenderingState(self, context)
+
+        # go through the View Layer and match the viewport visibility
+        # to the render visibility
+        for obj in target_view.objects:
+            obj.hide_render = obj.hide_get(view_layer = target_view)
+
     else:
         target_view = context.window.view_layer
 
@@ -374,7 +412,11 @@ def RenderDirectCamera(self, context, satellite):
                 bpy.context.view_layer.objects.active = obj
                 obj.select_set(state=True)
                 bpy.ops.object.material_slot_remove()
-
+    
+    # restore the render state
+    if render_options.view_layer != "":        
+        RestoreRenderingState(self, context, saved_render_state)
+    
     
     context.window.view_layer = old_view
 
@@ -534,6 +576,17 @@ class SATELLITE_OT_RenderAllActive(Operator):
     def execute(self, context):
 
         scene = bpy.context.scene
+        sat_data = scene.SATL_SceneData
+
+        # Check that we have an active satellite before doing anything
+        enabled_count = 0
+        for satellite in sat_data.sat_presets:
+            if satellite.is_active is True:
+                enabled_count += 1
+        
+        if enabled_count == 0:
+            self.report({'WARNING'}, "No Satellites are currently active.  Please tick at least one Satellite from the list to make it active")
+            return {'FINISHED'}
         
         # Perform some safety checks to ensure we have what we need
         verify_settings = VerifyRenderSettings(self, context, False)
@@ -555,7 +608,6 @@ class SATELLITE_OT_RenderAllActive(Operator):
         old_active_object = context.active_object
 
         # Get the selected render preset and check it's type
-        sat_data = scene.SATL_SceneData
         selected_render_index = sat_data.sat_selected_list_index
         satellite = sat_data.sat_presets[selected_render_index]
 
@@ -591,7 +643,13 @@ class SATELLITE_OT_RenderAllActive(Operator):
         
         # TODO: Add a status bar and some flexible info dumps.
             
-        if report != None:
+        if report != None and enabled_count <= 1:
             self.report({'INFO'}, "The Skybox has been saved to " + report['destination'] + ".")
+        
+        else:
+            info_txt = "Rendered "
+            info_txt += str(enabled_count)
+            info_txt += " Satellites"
+            self.report({'INFO'}, info_txt)
 
         return {'FINISHED'}

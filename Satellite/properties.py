@@ -109,7 +109,7 @@ class SATELLITE_FormatCamera(PropertyGroup):
 
     view_layer: StringProperty(
         name="Target View Layer",
-        description="Use this to define a View Layer that will be used when rendering the scene.  If left empty the currently active View Layer in the scene will be used",
+        description="If defined the View Layer's Viewport Visibility will be used to decide what objects in the scene will be rendered (this is due to the fact that Render Visibility cannot change between View Layers)",
         default="",
     )
 
