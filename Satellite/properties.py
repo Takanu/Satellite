@@ -133,7 +133,7 @@ class SATELLITE_FormatCamera(PropertyGroup):
             ('Cycles', "Cycles", "Use the Cycles Rendering Engine to render this skybox.  WARNING - Satellite will use the Compute Device you have selected, check this setting under Properties Panel > Render for optimal performance"),
             ),
             
-        description="The Render Engine that will be used to perform the render.  WARNING - Some Materials can only be properly rendered using a certain Render Engine, ensure you select the one that is compatible with your World Material",
+        description="The Render Engine that will be used to perform the render.  WARNING - Some Materials can only be properly rendered using a certain Render Engine depending on the nodes used, ensure you select the one that is compatible with your Materials",
     )
 
     resolution_x: IntProperty(
@@ -310,6 +310,61 @@ class SATELLITE_Preset(PropertyGroup):
 
     # the data stored for OBJ presets.
     data_camera: PointerProperty(type=SATELLITE_FormatCamera)
+
+    # Below is additional preferences that are shared between render types
+
+    color_view_transform: EnumProperty(
+        name="View Transform",
+        items=
+            (
+            ('Standard', "Standard", "No conversion is applied beyond any required to output to your display device, use this when you have specific Material setups or Shadeless Materials where you need the color to be exactly the same"),
+            ('Filmic', "Filmic", "The standard View Transform used in Blender - used for photorealistic results and better handling or high dynamic range colors"),
+            ('Filmic Log', "Filmic", "The standard View Transform used in Blender - used for photorealistic results and better handling or high dynamic range colors"),
+            ('Filmic Log', "Filmic Log", "Used for export to color grading applications or to inspect the image by flattening out very dark and light areas"),
+            ('Raw', "Raw", "Intended for inspecting the image but not for final export. Raw gives the image without any color space conversion"),
+            ('False Color', "False Color", "Shows a heat map of image intensities to visualize the dynamic range"),
+            ),
+            
+        description="Defines the conversion of color when an image is rendered.  NOTE - While Filmic is the default look you see in any rendered 3D view, you'll want to use Standard if you're using Satellite to bake world information or 'shadeless' materials in the scene where the Material color must match the final Rendered color 1:1",
+        default='Filmic',
+    )
+
+    color_look: EnumProperty(
+        name="Look",
+        items=
+            (
+            ('None', "None", ""),
+            ('Very Low Contrast', "Very Low Contrast", ""),
+            ('Low Contrast', "Low Contrast", ""),
+            ('Medium Low Contrast', "Medium Low Contrast", ""),
+            ('Medium Contrast', "Medium Contrast", ""),
+            ('Medium High Contrast', "Medium High Contrast", ""),
+            ('High Contrast', "High Contrast", ""),
+            ('Very High Contrast', "Very High Contrast", ""),
+            ),
+            
+        description="Adds an additional set of alterations after the View Transform which roughly estimates the look of certain film types",
+    )
+
+    color_exposure: FloatProperty(
+        name = "Exposure",
+        description = "Used to control the image brightness (in stops) applied before color space conversion",
+        default = 0,
+        min = -1,
+        max = 1,
+        subtype = 'FACTOR',
+        precision = 3,
+    )
+
+    color_gamma: FloatProperty(
+        name = "Gamma",
+        description = "Extra gamma correction applied after color space conversion. Note that the default display transforms already perform the appropriate conversion, so this mainly acts as an additional effect for artistic tweaks",
+        default = 1,
+        min = 0,
+        max = 5,
+        subtype = 'FACTOR',
+        precision = 3,
+    )
 
 
 class SATELLITE_SceneData(PropertyGroup):

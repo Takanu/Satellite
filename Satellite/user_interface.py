@@ -144,6 +144,19 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
                 render_format_options.separator()
                 render_format_col_mode = render_format_options.row(align=True)
                 render_format_col_mode.prop(render_format, "color_mode", expand=True)
+
+                render_format_options.separator()
+                render_format_options.separator()
+                render_format_options.separator()
+                
+
+                # Color Settings
+                render_format_options.prop(render_selected, "color_view_transform")
+                render_format_options.prop(render_selected, "color_look")
+                render_format_options.separator()
+                render_format_options.prop(render_selected, "color_exposure")
+                render_format_options.prop(render_selected, "color_gamma")
+
                 render_format_options.separator()
                 render_format_options.separator()
 
@@ -222,6 +235,17 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
                 
                 if file_format in ['JPEG']:
                     render_format_options.prop(render_format, "quality")
+
+                render_format_options.separator()
+                render_format_options.separator()
+                render_format_options.separator()
+
+                # Color Settings
+                render_format_options.prop(render_selected, "color_view_transform")
+                render_format_options.prop(render_selected, "color_look")
+                render_format_options.separator()
+                render_format_options.prop(render_selected, "color_exposure")
+                render_format_options.prop(render_selected, "color_gamma")
 
                 render_format_options.separator()
                 render_format_options.separator()

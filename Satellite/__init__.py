@@ -19,7 +19,7 @@ bl_info = {
     "blender": (3, 0, 0),
     "location": "Properties > Output",
     "wiki_url": "https://github.com/Takanu/Satellite",
-    "description": "Batch render Skybox and Camera images.",
+    "description": "Batch render Skybox and Camera images with custom view layers and replacement materials",
     "tracker_url": "",
     "category": "Render"
 }

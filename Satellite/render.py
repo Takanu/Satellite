@@ -19,6 +19,7 @@ def SaveRenderSettings(self, context):
     cycles_settings = {}
     eevee_settings = {}
     render_settings = {}
+    color_settings = {}
     
 
     # CYCLES SETTINGS (the API page is missing, do your best, avoid preview settings)
@@ -61,10 +62,19 @@ def SaveRenderSettings(self, context):
     render_settings['quality'] = render.image_settings.quality
     render_settings['color_depth'] = render.image_settings.color_depth
 
+    # COLOR SETTINGS
+    color = context.scene.view_settings
+    color_settings['view_transform'] = color.view_transform
+    color_settings['look'] = color.look
+    color_settings['exposure'] = color.exposure
+    color_settings['gamma'] = color.gamma
+
+
     saved_render_settings['cycles'] = cycles_settings
     saved_render_settings['eevee'] = eevee_settings
     saved_render_settings['render'] = render_settings
-
+    saved_render_settings['color'] = color_settings
+    
 
     return saved_render_settings
 
@@ -81,6 +91,7 @@ def RestoreRenderSettings(self, context, saved_render_settings):
     cycles_settings = saved_render_settings['cycles']
     eevee_settings = saved_render_settings['eevee']
     render_settings = saved_render_settings['render']
+    color_settings = saved_render_settings['color']
     
 
     # CYCLES SETTINGS (the API page is missing, do your best, avoid preview settings)
@@ -123,6 +134,14 @@ def RestoreRenderSettings(self, context, saved_render_settings):
     render.image_settings.compression = render_settings["compression"]
     render.image_settings.quality = render_settings["quality"]
     render.image_settings.color_depth = render_settings["color_depth"]
+
+
+    # COLOR SETTINGS
+    color = context.scene.view_settings
+    color.view_transform = color_settings['view_transform']
+    color.look = color_settings['look']
+    color.exposure = color_settings['exposure']
+    color.gamma = color_settings['gamma']
 
     pass
 
@@ -556,6 +575,15 @@ class SATELLITE_OT_RenderSelected(Operator):
         satellite = sat_data.sat_presets[selected_render_index]
 
         # ////////////////////////////////////////////////////////////////////////////
+        # EDIT COLOR SETTINGS
+        # this is shared between render modes so it can be done here
+        color = context.scene.view_settings
+        color.view_transform = satellite.color_view_transform
+        color.look = satellite.color_look
+        color.exposure = satellite.color_exposure
+        color.gamma = satellite.color_gamma
+
+        # ////////////////////////////////////////////////////////////////////////////
         # RENDER!
         report = None
 
@@ -635,7 +663,7 @@ class SATELLITE_OT_RenderAllActive(Operator):
         satellite = sat_data.sat_presets[selected_render_index]
 
         # ////////////////////////////////////////////////////////////////////////////
-        # RENDER!
+        # STEP STEP STEP
         report = None
 
         for satellite in sat_data.sat_presets:
@@ -643,6 +671,17 @@ class SATELLITE_OT_RenderAllActive(Operator):
                 # store old properties for later
                 old_render_settings = SaveRenderSettings(self, context)
 
+                # ////////////////////////////////////////////////////////////////////////////
+                # EDIT COLOR SETTINGS
+                # this is shared between render modes so it can be done here
+                color = context.scene.view_settings
+                color.view_transform = satellite.color_view_transform
+                color.look = satellite.color_look
+                color.exposure = satellite.color_exposure
+                color.gamma = satellite.color_gamma
+                
+                # ////////////////////////////////////////////////////////////////////////////
+                # RENDER!
                 if satellite.render_type == 'Skybox':
                     report = RenderSkybox(self, context, satellite)
                 elif satellite.render_type == 'Direct Camera':
