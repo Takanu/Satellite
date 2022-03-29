@@ -27,6 +27,62 @@ class SATELLITE_OT_Remove(Operator):
 
         return {'FINISHED'}
 
+class SATELLITE_OT_ShiftUp(Operator):
+    """Moves the currently selected Satellite one up in the list"""
+
+    bl_idname = "scene.satl_ui_shiftup"
+    bl_label = "Move Selection Up"
+
+    def execute(self, context):
+        sat_data = context.scene.SATL_SceneData
+        index = sat_data.sat_selected_list_index
+
+        if index <= 0:
+            return {'FINISHED'}
+        
+        sat_data.sat_presets.move(index, index - 1)
+        sat_data.sat_selected_list_index -= 1
+
+        return {'FINISHED'}
+
+class SATELLITE_OT_ShiftDown(Operator):
+    """Moves the currently selected Satellite one down in the list"""
+
+    bl_idname = "scene.satl_ui_shiftdown"
+    bl_label = "Move Selection Down"
+
+    def execute(self, context):
+        sat_data = context.scene.SATL_SceneData
+        index = sat_data.sat_selected_list_index
+
+        if index >= len(sat_data.sat_presets) - 1:
+            return {'FINISHED'}
+        
+        sat_data.sat_presets.move(index, index + 1)
+        sat_data.sat_selected_list_index += 1
+
+        return {'FINISHED'}
+
+
+class SATELLITE_OT_Duplicate(Operator):
+    """Duplicates a currently selected Satellite"""
+
+    bl_idname = "scene.satl_ui_duplicate"
+    bl_label = "Duplicate Selection"
+
+    def execute(self, context):
+        sat_data = context.scene.SATL_SceneData
+        index = sat_data.sat_selected_list_index
+        selected_sat = sat_data.sat_presets[index]
+
+        new_render = sat_data.sat_presets.add()
+        new_render.name = selected_sat.name + "D"
+        
+        for k, v in selected_sat.items():
+            new_render[k] = v
+
+        return {'FINISHED'}
+
 
 class SATELLITE_UL_PresetList(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -58,13 +114,21 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
                                     sat_data, "sat_selected_list_index", rows=3, maxrows=6)
         ui_list_column.operator("scene.satl_render_selected")
         ui_list_column.operator("scene.satl_render_all")
+
         ui_list_column.separator()
+        ui_list_area.separator()
 
         ui_list_column = ui_list_area.column(align=True)
         ui_list_column.operator("scene.satl_add", text="", icon="ADD")
         ui_list_column.operator("scene.satl_remove", text="", icon="REMOVE")
-        #ui_list_column.operator("scene.cap_shiftup", text="", icon="TRIA_UP")
-        #ui_list_column.operator("scene.cap_shiftdown", text="", icon="TRIA_DOWN")
+        ui_list_column.separator()
+        ui_list_column.operator("scene.satl_ui_shiftup", text="", icon="TRIA_UP")
+        ui_list_column.operator("scene.satl_ui_shiftdown", text="", icon="TRIA_DOWN")
+        ui_list_column.separator()
+        ui_list_column.operator("scene.satl_ui_duplicate", text="", icon="DUPLICATE")
+        ui_list_column.separator()
+
+        
     
 
         # //////////////////////////////////
