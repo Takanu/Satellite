@@ -148,16 +148,57 @@ def RestoreRenderSettings(self, context, saved_render_settings):
 # /////////////////////////////////////////////////////////////////////////
 # /////////////////////////////////////////////////////////////////////////
 
+# batfinger you legend
+def TraverseCollectionTree(t):
+    """
+    Returns a list from a recursive search
+    """
+    yield t
+    for child in t.children:
+        yield from TraverseCollectionTree(child)
 
-def SaveRenderingState(self, context):
-    """Saves the rendering state of objects in the scene before modifying them."""
 
-    render_state = []
+# /////////////////////////////////////////////////////////////////////////
+# /////////////////////////////////////////////////////////////////////////
+
+
+def SetupRenderingState(self, context, view_layer = None):
+    """
+    Saves the rendering state of objects in the scene, then modifies them
+    based on their viewport visibility.
+    """
+
+    # TODO: Incorporate the ViewLayer Collection exclude property.
+
+    # If we don't have a view layer use the active one.
+    if view_layer is None:
+        view_layer = context.window.view_layer
+    
+    obj_render_state = []
+    print(view_layer)
+
     for obj in context.scene.objects:
         state = {}
         state['object'] = obj
         state['hide_render'] = obj.hide_render
+        obj_render_state.append(state)
+
+        obj.hide_render = obj.hide_get(view_layer = view_layer)
+        
+    col_render_state = []
+    for col in TraverseCollectionTree(view_layer.active_layer_collection):
+        state = {}
+        state['collection'] = col.collection
+        state['hide_render'] = col.collection.hide_render
+        col_render_state.append(state)
+
+        renderable = (col.is_visible or col.holdout)
+        col.collection.hide_render = (not renderable)
     
+    render_state = {}
+    render_state['objects'] = obj_render_state
+    render_state['collections'] = col_render_state
+
     return render_state
 
 
@@ -168,8 +209,14 @@ def SaveRenderingState(self, context):
 def RestoreRenderingState(self, context, render_state):
     """Restores the rendering state of objects in the scene."""
 
-    for state in render_state:
+    obj_render_state = render_state['objects']
+    col_render_state = render_state['collections']
+
+    for state in obj_render_state:
         state['object'].hide_render = state['hide_render']
+    
+    for state in col_render_state:
+        state['collection'].hide_render = state['hide_render']
 
 
 
@@ -191,12 +238,7 @@ def RenderSkybox(self, context, satellite):
         context.window.view_layer = target_view
         
         # archive the render state
-        saved_render_state = SaveRenderingState(self, context)
-
-        # go through the View Layer and match the viewport visibility
-        # to the render visibility
-        for obj in target_view.objects:
-            obj.hide_render = obj.hide_get(view_layer = target_view)
+        saved_render_state = SetupRenderingState(self, context, target_view)
 
     else:
         # create a new view layer and hide everything
@@ -315,12 +357,7 @@ def RenderDirectCamera(self, context, satellite):
         context.window.view_layer = target_view
         
         # archive the render state
-        saved_render_state = SaveRenderingState(self, context)
-
-        # go through the View Layer and match the viewport visibility
-        # to the render visibility
-        for obj in target_view.objects:
-            obj.hide_render = obj.hide_get(view_layer = target_view)
+        saved_render_state = SetupRenderingState(self, context, target_view)
 
     else:
         target_view = context.window.view_layer
