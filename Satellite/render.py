@@ -155,6 +155,7 @@ def TraverseCollectionTree(t):
     """
     yield t
     for child in t.children:
+        print(child)
         yield from TraverseCollectionTree(child)
 
 
@@ -168,14 +169,11 @@ def SetupRenderingState(self, context, view_layer = None):
     based on their viewport visibility.
     """
 
-    # TODO: Incorporate the ViewLayer Collection exclude property.
-
     # If we don't have a view layer use the active one.
     if view_layer is None:
         view_layer = context.window.view_layer
     
     obj_render_state = []
-    print(view_layer)
 
     for obj in context.scene.objects:
         state = {}
@@ -186,12 +184,13 @@ def SetupRenderingState(self, context, view_layer = None):
         obj.hide_render = obj.hide_get(view_layer = view_layer)
         
     col_render_state = []
-    for col in TraverseCollectionTree(view_layer.active_layer_collection):
+    scene_collections = TraverseCollectionTree(view_layer.layer_collection)
+    for col in scene_collections:
         state = {}
         state['collection'] = col.collection
         state['hide_render'] = col.collection.hide_render
         col_render_state.append(state)
-
+        
         renderable = (col.is_visible or col.holdout)
         col.collection.hide_render = (not renderable)
     
@@ -233,11 +232,13 @@ def RenderSkybox(self, context, satellite):
     target_view = None
     saved_render_state = []
     
+    
     if render_options.view_layer != "":
         target_view = scene.view_layers[render_options.view_layer]
         context.window.view_layer = target_view
         
         # archive the render state
+
         saved_render_state = SetupRenderingState(self, context, target_view)
 
     else:
@@ -247,7 +248,7 @@ def RenderSkybox(self, context, satellite):
 
         for layer in render_viewlayer.layer_collection.children:
             layer.exclude = True
-
+        
 
     # ///////////////////////////////////////
     # CAMERA + WORLD
@@ -365,7 +366,7 @@ def RenderDirectCamera(self, context, satellite):
     # If we have a Replacement Material set we need to 
     # save all renderable object materials before switching 
     # NOTE - You have to sweep for all material slots
-    # NOTE2 - You have to handle objects that have no slots assigned
+    # NOTE 2 - You have to handle objects that have no slots assigned
     saved_object_mats = []
     target_mat = render_options.replacement_material
 
