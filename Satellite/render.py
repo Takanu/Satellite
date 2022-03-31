@@ -155,7 +155,6 @@ def TraverseCollectionTree(t):
     """
     yield t
     for child in t.children:
-        print(child)
         yield from TraverseCollectionTree(child)
 
 
@@ -193,6 +192,13 @@ def SetupRenderingState(self, context, view_layer = None):
         
         renderable = (col.is_visible or col.holdout)
         col.collection.hide_render = (not renderable)
+
+        # we also need to set objects inside as not renderable
+        # as the replacement material system relies on the render
+        # status to filter out as Blender has no internal "renderable"
+        # indicator.
+        for col_obj in col.collection.all_objects:
+            col_obj.hide_render = True
     
     render_state = {}
     render_state['objects'] = obj_render_state
@@ -362,6 +368,8 @@ def RenderDirectCamera(self, context, satellite):
 
     else:
         target_view = context.window.view_layer
+    
+    return
 
     # If we have a Replacement Material set we need to 
     # save all renderable object materials before switching 
@@ -390,14 +398,20 @@ def RenderDirectCamera(self, context, satellite):
                 # Get slot data if we have it
                 if has_slots == True:
                     slot_list = []
+                    link_type = []
+
                     for slot in mat_slots:
                         slot_list.append(slot.name)
-                        mat_data['slots'] = slot_list
+                        link_type.append(slot.link)
+                    
+                    # TODO: Finish link type implementation
+                    mat_data['slots'] = slot_list
+                    mat_data['link_type'] = link_type
                     
                     # NOW WIPE EM
-                    for i in range(0, len(mat_slots.values())) :
-                        obj.active_material_index = i
-                        obj.active_material = target_mat
+                    for slot in mat_slots :
+                        # slot.link = 'OBJECT' # TODO: Check if it works, srsly
+                        slot.material = target_mat
                 
                 # If we dont, assign a material
                 else:
@@ -407,6 +421,7 @@ def RenderDirectCamera(self, context, satellite):
                 saved_object_mats.append(mat_data)
 
                 pass
+    
 
     # If a World Material has been defined, use it.
     old_world = scene.world
@@ -470,6 +485,12 @@ def RenderDirectCamera(self, context, satellite):
     if render_options.world_material is not None:
         scene.world = old_world
     
+    # restore the render state
+    if render_options.view_layer != "":        
+        RestoreRenderingState(self, context, saved_render_state)
+    
+    context.window.view_layer = old_view
+    
     if render_options.replacement_material is not None:
 
         for item in saved_object_mats:
@@ -482,23 +503,22 @@ def RenderDirectCamera(self, context, satellite):
                     materials.append(bpy.data.materials[mat_name])
             
                 # NOW WIPE EM
-                for i in range(0, len(materials)) :
-                    obj.active_material_index = i
-                    obj.active_material = materials[i]
+                i = 0
+                for slot in obj.material_slots:
+                    slot.link = item['link_type'][i]
+                    slot.material = materials[i]
+                    i += 1
             
-            # If we didn't, delete the active material
+            # If ww don't have any slots, delete the active material
             else:
                 bpy.ops.object.select_all(action='DESELECT')
                 bpy.context.view_layer.objects.active = obj
                 obj.select_set(state=True)
                 bpy.ops.object.material_slot_remove()
-    
-    # restore the render state
-    if render_options.view_layer != "":        
-        RestoreRenderingState(self, context, saved_render_state)
-    
-    
-    context.window.view_layer = old_view
+            
+            # print(obj.name, " !!!!! ")
+            # for mat_print in obj.material_slots.values():
+            #     print(mat_print.name)
 
 
     report  = {}
