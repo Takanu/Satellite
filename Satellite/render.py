@@ -181,24 +181,31 @@ def SetupRenderingState(self, context, view_layer = None):
         obj_render_state.append(state)
 
         obj.hide_render = obj.hide_get(view_layer = view_layer)
-        
+    
+    
+    # TODO: What about objects that belong to multiple collections
     col_render_state = []
     scene_collections = TraverseCollectionTree(view_layer.layer_collection)
+
     for col in scene_collections:
+        if col.name == "Scene Collection":
+            continue
+
         state = {}
         state['collection'] = col.collection
         state['hide_render'] = col.collection.hide_render
         col_render_state.append(state)
         
-        renderable = (col.is_visible or col.holdout)
-        col.collection.hide_render = (not renderable)
+        # renderable = () # or col.holdout, add later
+        col.collection.hide_render = (not col.is_visible)
 
         # we also need to set objects inside as not renderable
         # as the replacement material system relies on the render
         # status to filter out as Blender has no internal "renderable"
         # indicator.
-        for col_obj in col.collection.all_objects:
-            col_obj.hide_render = True
+        if not col.is_visible:
+            for col_obj in col.collection.all_objects:
+                col_obj.hide_render = True
     
     render_state = {}
     render_state['objects'] = obj_render_state
@@ -254,7 +261,7 @@ def RenderSkybox(self, context, satellite):
 
         for layer in render_viewlayer.layer_collection.children:
             layer.exclude = True
-        
+    
 
     # ///////////////////////////////////////
     # CAMERA + WORLD
@@ -299,7 +306,7 @@ def RenderSkybox(self, context, satellite):
 
     camera_name = context.active_object.name
     camera_bname = context.active_object.data.name
-    print(camera_name)
+    
     bpy.data.cameras[camera_bname].type = 'PANO'
     bpy.data.cameras[camera_bname].cycles.panorama_type = 'EQUIRECTANGULAR'
 
@@ -368,8 +375,6 @@ def RenderDirectCamera(self, context, satellite):
 
     else:
         target_view = context.window.view_layer
-    
-    return
 
     # If we have a Replacement Material set we need to 
     # save all renderable object materials before switching 
@@ -516,10 +521,6 @@ def RenderDirectCamera(self, context, satellite):
                 obj.select_set(state=True)
                 bpy.ops.object.material_slot_remove()
             
-            # print(obj.name, " !!!!! ")
-            # for mat_print in obj.material_slots.values():
-            #     print(mat_print.name)
-
 
     report  = {}
     report['status'] = 'FINISHED'
