@@ -214,6 +214,129 @@ def SetupRenderingState(self, context, view_layer = None):
     return render_state
 
 
+def ReplaceObjectMaterialSlots(self, context, target_obj, target_mat):
+    """Saves a record of any material slots the object has, including any from Geometry Node Modifiers, then replaces it with a provided material."""
+
+    mat_data = {}
+    mat_data['object'] = target_obj
+    mat_slots = target_obj.material_slots
+
+    # ////////////////////////////////
+    # MATERIAL SLOT REPLACEMENT
+
+    has_slots = (len(mat_slots.values()) > 0)
+    mat_data['has_slots'] = has_slots
+
+    # Get slot data if we have it
+    if has_slots == True:
+        slot_list = []
+        link_type = []
+
+        for slot in mat_slots:
+            slot_list.append(slot.name)
+            link_type.append(slot.link)
+        
+        # TODO: Finish link type implementation
+        mat_data['slots'] = slot_list
+        mat_data['link_type'] = link_type
+        
+        # NOW WIPE EM
+        for slot in mat_slots :
+            # slot.link = 'OBJECT' # TODO: Check if it works, srsly
+            slot.material = target_mat
+    
+    # If we dont, assign a material
+    else:
+        target_obj.active_material = target_mat
+    
+    # ////////////////////////////////
+    # GEOMETRY NODE SLOT REPLACEMENT
+    # big thanks to the modifier list addon author for cracking
+    # the code on this seemingly undocumented area
+
+    mat_data['modifiers'] = []
+
+    for md in target_obj.modifiers:
+        if md.type == 'NODES':
+            
+            modifier_data = {}
+            modifier_data['modifier_data'] = md
+            modifier_data['inputs'] = []
+
+            input_node = next((node for node in md.node_group.nodes if node.type == 'GROUP_INPUT'),
+                        None)
+            
+            if not input_node:
+                continue
+            
+            node_output_types = []
+            # valid_node_outputs_names = []
+            # node_output_socket_shapes = []
+
+            # Skip the last output because it's a placeholder.
+            for node_output in input_node.outputs[:-1]:
+                if node_output.type != 'GEOMETRY':
+                    node_output_types.append(node_output.type)
+                    # valid_node_outputs_names.append(node_output.name)
+                    # node_output_socket_shapes.append(node_output.display_shape)
+            
+            input_prop_ids = [prop_id for prop_id in md.keys()
+                        if (prop_id.startswith("Input_") and prop_id[-1].isdigit())]
+                        
+            i = 0
+            while i < len(node_output_types) - 1:
+                key = input_prop_ids[i]
+                value = node_output_types[i]
+                
+                if value == 'MATERIAL':
+                    mat_record = (key, md[key])
+                    modifier_data['inputs'].append(mat_record)
+                    md[key] = target_mat
+                
+                i += 1
+
+            mat_data['modifiers'].append(modifier_data)
+    
+    return mat_data
+
+def RestoreObjectMaterialSlots(self, context, mat_data):
+    """Restores an object's material slots based on a previous replacement operation."""
+    
+    obj = mat_data['object']
+    materials = []
+
+    # If we had slots, replace them one after another
+    if mat_data['has_slots'] == True:
+        for mat_name in mat_data['slots']:
+            materials.append(bpy.data.materials[mat_name])
+    
+        # NOW WIPE EM
+        i = 0
+        for slot in obj.material_slots:
+            slot.link = mat_data['link_type'][i]
+            slot.material = materials[i]
+            i += 1
+    
+    # If ww don't have any slots, delete the active material
+    else:
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(state=True)
+        bpy.ops.object.material_slot_remove()
+    
+    
+    # RESTORE GEOMETRY NODES
+    modifier_data = mat_data['modifiers']
+
+    for mod_data in modifier_data:
+        md = mod_data['modifier_data']
+        inputs = mod_data['inputs']
+
+        for input in inputs:
+            md[input[0]] = input[1]
+
+
+
 # /////////////////////////////////////////////////////////////////////////
 # /////////////////////////////////////////////////////////////////////////
 
@@ -393,39 +516,9 @@ def RenderDirectCamera(self, context, satellite):
             renderable = (obj.hide_render == False)
 
             if valid_type is True and renderable is True:
-                mat_data = {}
-                mat_data['object'] = obj
-                mat_slots = obj.material_slots
-
-                has_slots = (len(mat_slots.values()) > 0)
-                mat_data['has_slots'] = has_slots
-
-                # Get slot data if we have it
-                if has_slots == True:
-                    slot_list = []
-                    link_type = []
-
-                    for slot in mat_slots:
-                        slot_list.append(slot.name)
-                        link_type.append(slot.link)
-                    
-                    # TODO: Finish link type implementation
-                    mat_data['slots'] = slot_list
-                    mat_data['link_type'] = link_type
-                    
-                    # NOW WIPE EM
-                    for slot in mat_slots :
-                        # slot.link = 'OBJECT' # TODO: Check if it works, srsly
-                        slot.material = target_mat
-                
-                # If we dont, assign a material
-                else:
-                    obj.active_material = target_mat
-
-                # Save the data for restoration later
+                mat_data = ReplaceObjectMaterialSlots(self, context, obj, target_mat)
                 saved_object_mats.append(mat_data)
 
-                pass
     
 
     # If a World Material has been defined, use it.
@@ -497,29 +590,8 @@ def RenderDirectCamera(self, context, satellite):
     context.window.view_layer = old_view
     
     if render_options.replacement_material is not None:
-
-        for item in saved_object_mats:
-            obj = item['object']
-            materials = []
-
-            # If we had slots, replace them one after another
-            if item['has_slots'] == True:
-                for mat_name in item['slots']:
-                    materials.append(bpy.data.materials[mat_name])
-            
-                # NOW WIPE EM
-                i = 0
-                for slot in obj.material_slots:
-                    slot.link = item['link_type'][i]
-                    slot.material = materials[i]
-                    i += 1
-            
-            # If ww don't have any slots, delete the active material
-            else:
-                bpy.ops.object.select_all(action='DESELECT')
-                bpy.context.view_layer.objects.active = obj
-                obj.select_set(state=True)
-                bpy.ops.object.material_slot_remove()
+        for mat_data in saved_object_mats:
+            RestoreObjectMaterialSlots(self, context, mat_data)
             
 
     report  = {}
