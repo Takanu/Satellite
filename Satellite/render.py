@@ -263,6 +263,9 @@ def ReplaceObjectMaterialSlots(self, context, target_obj, target_mat):
             modifier_data['modifier_data'] = md
             modifier_data['inputs'] = []
 
+            if not md.node_group:
+                continue
+
             input_node = next((node for node in md.node_group.nodes if node.type == 'GROUP_INPUT'),
                         None)
             
@@ -308,7 +311,8 @@ def RestoreObjectMaterialSlots(self, context, mat_data):
     # If we had slots, replace them one after another
     if mat_data['has_slots'] == True:
         for mat_name in mat_data['slots']:
-            materials.append(bpy.data.materials[mat_name])
+            if mat_name != "" or None:
+                materials.append(bpy.data.materials[mat_name])
     
         # NOW WIPE EM
         i = 0
@@ -333,7 +337,8 @@ def RestoreObjectMaterialSlots(self, context, mat_data):
         inputs = mod_data['inputs']
 
         for input in inputs:
-            md[input[0]] = input[1]
+            if input[1] != "" or None:
+                md[input[0]] = input[1]
 
 
 
