@@ -7,6 +7,7 @@ import os
 from math import radians
 from mathutils import Vector
 
+# TODO: The save/restore script could probably be done using flexible RNA searches.
 
 def SaveRenderSettings(self, context):
     """
@@ -61,6 +62,9 @@ def SaveRenderSettings(self, context):
     render_settings['compression'] = render.image_settings.compression
     render_settings['quality'] = render.image_settings.quality
     render_settings['color_depth'] = render.image_settings.color_depth
+
+    render_settings['use_compositing'] = render.use_compositing
+    render_settings['use_sequencer'] = render.use_sequencer
 
     # COLOR SETTINGS
     color = context.scene.view_settings
@@ -135,6 +139,8 @@ def RestoreRenderSettings(self, context, saved_render_settings):
     render.image_settings.quality = render_settings["quality"]
     render.image_settings.color_depth = render_settings["color_depth"]
 
+    render.use_compositing = render_settings['use_compositing']
+    render.use_sequencer = render_settings['use_sequencer']
 
     # COLOR SETTINGS
     color = context.scene.view_settings
@@ -409,6 +415,9 @@ def RenderSkybox(self, context, satellite):
     scene.render.use_render_cache = False
     scene.render.use_overwrite = True
 
+    scene.render.use_compositing = False
+    scene.render.use_sequencer = False
+
     if render_options.render_engine == 'Cycles':
         scene.render.engine = 'CYCLES'
         scene.cycles.samples = render_options.samples
@@ -453,8 +462,7 @@ def RenderSkybox(self, context, satellite):
     destination = os.path.join(name, dir)
     bpy.context.scene.render.filepath = destination
     bpy.context.scene.render.use_single_layer = True
-    bpy.ops.render.render(write_still = True)
-
+    bpy.ops.render.render(animation = False, write_still = True)
 
     # ////////////////////////////////////////
     # CLEAN UP
@@ -582,7 +590,6 @@ def RenderDirectCamera(self, context, satellite):
     bpy.context.scene.render.use_single_layer = True
     bpy.ops.render.render(write_still = True)
 
-
     # ////////////////////////////////////////
     # CLEAN UP
     if render_options.world_material is not None:
@@ -674,7 +681,7 @@ def VerifyRenderSettings(self, context, verify_all):
 class SATELLITE_OT_RenderSelected(Operator):
     """Renders the selected Satellite"""
 
-    bl_idname = "scene.satl_render_selected"
+    bl_idname = "satl.render_selected"
     bl_label = "Render Selected"
 
     def execute(self, context):
@@ -706,7 +713,7 @@ class SATELLITE_OT_RenderSelected(Operator):
         old_render_settings = SaveRenderSettings(self, context)
 
         # Get the selected render preset and check it's type
-        sat_data = scene.SATL_SceneData
+        sat_data = context.scene.SATL_SceneData
         selected_render_index = sat_data.sat_selected_list_index
         satellite = sat_data.sat_presets[selected_render_index]
 
@@ -757,13 +764,13 @@ class SATELLITE_OT_RenderSelected(Operator):
 class SATELLITE_OT_RenderAllActive(Operator):
     """Renders all active Satellites"""
 
-    bl_idname = "scene.satl_render_all"
+    bl_idname = "satl.render_all"
     bl_label = "Render All Active"
 
     def execute(self, context):
 
         scene = bpy.context.scene
-        sat_data = scene.SATL_SceneData
+        sat_data = context.scene.SATL_SceneData
 
         # Check that we have an active satellite before doing anything
         enabled_count = 0

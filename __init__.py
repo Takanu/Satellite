@@ -37,7 +37,7 @@ def register():
     auto_load.register()
     
     # Assign datablocks now all classes have been registered.
-    bpy.types.Scene.SATL_SceneData = PointerProperty(name='Satellite Scene Data', type=SATELLITE_SceneData)
+    bpy.types.Scene.SATL_SceneData = PointerProperty(name = 'Satellite Scene Data', type = SATELLITE_SceneData)
 
 def unregister():
     del bpy.types.Scene.SATL_SceneData

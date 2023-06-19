@@ -292,8 +292,8 @@ class SATELLITE_Preset(PropertyGroup):
         name="Render Type",
         items=
             (
-            ('Skybox', "Skybox", "render a defined World Material into an HDRI Image.  Satellite will setup the camera and scene for you."),
-            ('Direct Camera', "Direct Camera", "render an image from a specific camera in the scene."),
+            ('Skybox', "Skybox", "Render a defined World Material into an HDRI Image.  Satellite will setup the camera and scene for you.", 'WORLD', 0),
+            ('Direct Camera', "Direct Camera","Render an image from a specific camera in the scene.", 'CAMERA_DATA', 1),
             ),
             
         description="Defines the purpose of the render and the sets of settings Satellite will use in order to perform it.",

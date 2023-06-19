@@ -5,11 +5,11 @@ from bpy.types import Menu, Panel, Operator, UIList
 class SATELLITE_OT_Add(Operator):
     """Add a new Satellite"""
 
-    bl_idname = "scene.satl_add"
+    bl_idname = "satl.add"
     bl_label = "Add Satellite"
 
     def execute(self, context):
-        sat_data = context.scene.SATL_SceneData
+        sat_data = context.SATL_SceneData
         new_render = sat_data.sat_presets.add()
         new_render.name = "Satellite " + str(len(sat_data.sat_presets))
 
@@ -18,7 +18,7 @@ class SATELLITE_OT_Add(Operator):
 class SATELLITE_OT_Remove(Operator):
     """Remove the selected Satellite"""
 
-    bl_idname = "scene.satl_remove"
+    bl_idname = "satl.remove"
     bl_label = "Remove Satellite"
 
     def execute(self, context):
@@ -30,7 +30,7 @@ class SATELLITE_OT_Remove(Operator):
 class SATELLITE_OT_ShiftUp(Operator):
     """Moves the currently selected Satellite one up in the list"""
 
-    bl_idname = "scene.satl_ui_shiftup"
+    bl_idname = "satl.ui_shift_up"
     bl_label = "Move Selection Up"
 
     def execute(self, context):
@@ -48,7 +48,7 @@ class SATELLITE_OT_ShiftUp(Operator):
 class SATELLITE_OT_ShiftDown(Operator):
     """Moves the currently selected Satellite one down in the list"""
 
-    bl_idname = "scene.satl_ui_shiftdown"
+    bl_idname = "satl.ui_shift_down"
     bl_label = "Move Selection Down"
 
     def execute(self, context):
@@ -67,7 +67,7 @@ class SATELLITE_OT_ShiftDown(Operator):
 class SATELLITE_OT_Duplicate(Operator):
     """Duplicates a currently selected Satellite"""
 
-    bl_idname = "scene.satl_ui_duplicate"
+    bl_idname = "satl._ui_duplicate"
     bl_label = "Duplicate Selection"
 
     def execute(self, context):
@@ -108,24 +108,24 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
 
         # //////////////////////////////////
         # LIST MENU
-        ui_list_area = layout.row(align=True)
-        ui_list_column = ui_list_area.column(align=True)
+        ui_list_area = layout.row(align = False)
+        ui_list_column = ui_list_area.column(align = True)
         ui_list_column.template_list("SATELLITE_UL_PresetList", "default", sat_data, "sat_presets", 
                                     sat_data, "sat_selected_list_index", rows=3, maxrows=6)
-        ui_list_column.operator("scene.satl_render_selected")
-        ui_list_column.operator("scene.satl_render_all")
+        ui_list_column.separator()
+        ui_list_column.operator("satl.render_selected", icon = "EXPORT")
+        ui_list_column.operator("satl.render_all", icon = "EXPORT")
 
         ui_list_column.separator()
-        ui_list_area.separator()
 
-        ui_list_column = ui_list_area.column(align=True)
-        ui_list_column.operator("scene.satl_add", text="", icon="ADD")
-        ui_list_column.operator("scene.satl_remove", text="", icon="REMOVE")
+        ui_list_column = ui_list_area.column(align = True)
+        ui_list_column.operator("satl.add", text="", icon="ADD")
+        ui_list_column.operator("satl.remove", text="", icon="REMOVE")
         ui_list_column.separator()
-        ui_list_column.operator("scene.satl_ui_shiftup", text="", icon="TRIA_UP")
-        ui_list_column.operator("scene.satl_ui_shiftdown", text="", icon="TRIA_DOWN")
+        ui_list_column.operator("satl.ui_shift_up", text="", icon="TRIA_UP")
+        ui_list_column.operator("satl.ui_shift_down", text="", icon="TRIA_DOWN")
         ui_list_column.separator()
-        ui_list_column.operator("scene.satl_ui_duplicate", text="", icon="DUPLICATE")
+        ui_list_column.operator("satl._ui_duplicate", text="", icon="DUPLICATE")
         ui_list_column.separator()
 
         
@@ -157,7 +157,7 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
 
             render_format_selector = render_options_area.row(align=True)
             render_format_selector_split = render_format_selector.split(factor=0.4, align=True)
-            render_format_selector_split.label(text="Render Type", icon="RENDER_RESULT")
+            render_format_selector_split.label(text="Render Type", icon="RENDER_STILL")
             render_format_selector_split.prop(render_selected, "render_type", text="")
             render_options_area.separator()
             
