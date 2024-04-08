@@ -13,7 +13,6 @@ from bpy.props import (
 )
 
 
-
 class SATELLITE_FormatSkybox(PropertyGroup):
     # Used to define settings for a Skybox render.
 
@@ -32,6 +31,9 @@ class SATELLITE_FormatSkybox(PropertyGroup):
         default="",
     )
 
+    # EEVEE Currenly doesn't support Equirectangular Panoramic rendering.
+    # This is hidden from the interface.
+
     render_engine: EnumProperty(
         name="Render Engine",
         items=
@@ -41,6 +43,7 @@ class SATELLITE_FormatSkybox(PropertyGroup):
             ),
             
         description="The Render Engine that will be used to perform the render.  WARNING - Some World Material nodes can only be rendered using a certain Render Engine, ensure you select the one that is compatible with your World Material",
+        default = 'Cycles',
     )
 
     resolution: IntProperty(

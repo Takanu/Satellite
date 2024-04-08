@@ -185,7 +185,7 @@ class SATELLITE_UL_MainMenu(bpy.types.Panel):
                 render_format_options.separator()
                 
                 # Render Engine Settings
-                render_format_options.prop(render_format, "render_engine")
+                # render_format_options.prop(render_format, "render_engine")
                 render_format_options.separator()
                 render_format_options.prop(render_format, "resolution")
                 render_format_options.prop(render_format, "samples")
