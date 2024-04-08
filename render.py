@@ -444,8 +444,9 @@ def RenderSkybox(self, context, satellite):
     camera_name = context.active_object.name
     camera_bname = context.active_object.data.name
     
+    # TODO - Prevent Skybox rendering in EEVEE, as it currently doesn't support Equirectangular renders.
     bpy.data.cameras[camera_bname].type = 'PANO'
-    bpy.data.cameras[camera_bname].cycles.panorama_type = 'EQUIRECTANGULAR'
+    bpy.data.cameras[camera_bname].panorama_type = 'EQUIRECTANGULAR'
 
     # If a World Material has been defined, use it.
     old_world = scene.world
@@ -687,12 +688,23 @@ class SATELLITE_OT_RenderSelected(Operator):
     def execute(self, context):
 
         scene = bpy.context.scene
+        sat_data = context.scene.SATL_SceneData
+        
+        enabled_count = 0
+        for satellite in sat_data.sat_presets:
+            if satellite.is_active is True:
+                enabled_count += 1
+        
+        if enabled_count == 0:
+            self.report({'WARNING'}, "No Satellites are currently active.  Please tick at least one Satellite from the list to make it active")
+            return {'FINISHED'}
         
         # Perform some safety checks to ensure we have what we need
         verify_settings = VerifyRenderSettings(self, context, False)
         if verify_settings['status'] != 'SUCCESS':
             self.report({'WARNING'}, verify_settings['info'])
             return {'FINISHED'}
+
 
         # ////////////////////////////////////////////////////////////////////////////
         # SAVE CONTEXT STATE
@@ -713,7 +725,6 @@ class SATELLITE_OT_RenderSelected(Operator):
         old_render_settings = SaveRenderSettings(self, context)
 
         # Get the selected render preset and check it's type
-        sat_data = context.scene.SATL_SceneData
         selected_render_index = sat_data.sat_selected_list_index
         satellite = sat_data.sat_presets[selected_render_index]
 

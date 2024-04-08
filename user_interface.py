@@ -9,7 +9,7 @@ class SATELLITE_OT_Add(Operator):
     bl_label = "Add Satellite"
 
     def execute(self, context):
-        sat_data = context.SATL_SceneData
+        sat_data = context.scene.SATL_SceneData
         new_render = sat_data.sat_presets.add()
         new_render.name = "Satellite " + str(len(sat_data.sat_presets))
 
