@@ -40,7 +40,6 @@ def SaveRenderSettings(self, context):
     eevee_settings["use_gtao"] = eevee.use_gtao
     eevee_settings["use_bloom"] = eevee.use_bloom
     eevee_settings["use_ssr"] = eevee.use_ssr
-    eevee_settings["use_motion_blur"] = eevee.use_motion_blur
 
     # RENDER SETTINGS
     render = context.scene.render
@@ -115,7 +114,6 @@ def RestoreRenderSettings(self, context, saved_render_settings):
     eevee.use_gtao = eevee_settings["use_gtao"]
     eevee.use_bloom = eevee_settings["use_bloom"]
     eevee.use_ssr = eevee_settings["use_ssr"]
-    eevee.use_motion_blur = eevee_settings["use_motion_blur"]
 
 
     # RENDER SETTINGS
@@ -431,8 +429,6 @@ def RenderSkybox(self, context, satellite):
             scene.eevee.use_gtao = False
             scene.eevee.use_bloom = False
             scene.eevee.use_ssr = False
-            scene.eevee.use_motion_blur = False
-    
 
     # ///////////////////////////////////////
     # CAMERA + WORLD
@@ -578,7 +574,6 @@ def RenderDirectCamera(self, context, satellite):
             scene.eevee.use_gtao = False
             scene.eevee.use_bloom = False
             scene.eevee.use_ssr = False
-            scene.eevee.use_motion_blur = False
 
     # render this bad boy *slaps side of car*
     camera_name = render_options.target_camera.name
